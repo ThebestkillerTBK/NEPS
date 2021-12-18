@@ -66,8 +66,8 @@ public:
 		float acceleration = 0.6f;
 		float friction = 2.0f;
 		bool betweenShots = true;
-		int firstShotDelay{ 0 };
-		int killDelay{ 0 };
+		int firstShotDelay = 0;
+		int killDelay = 0;
 		float maxAimInaccuracy = 1.0f;
 		float maxShotInaccuracy = 1.0f;
 		struct AimbotOverride
@@ -347,7 +347,7 @@ public:
 		{
 			KeyBind keybind;
 			bool teammates = false;
-			float distance = 700.0f;
+			float distance = 0.0f;
 			float fov = 6.0f;
 		} soundESP;
 

@@ -136,7 +136,7 @@ void Aimbot::predictPeek(UserCmd *cmd) noexcept
 			if (cfg.autoScope && !localPlayer->isScoped() && activeWeapon->isSniperRifle())
 				cmd->buttons |= UserCmd::Button_Attack2;
 
-			if (cfg.autoStop)
+			if (cfg.autoStop && !activeWeapon->isKnife())
 				Misc::slowwalk(cmd);
 		}
 	}
@@ -521,8 +521,14 @@ void Aimbot::run(UserCmd *cmd) noexcept
 		static Vector aimVelocity = Vector{};
 
 		const auto target = interfaces->entityList->getEntityFromHandle(targetHandle);
+
+		static auto lastTime = 0.0f;
+
 		if (target && targetAngle.notNull())
 		{
+			//if (now - lastTime < cfg.firstShotDelay / 1000.0f)
+				//return;
+
 			static Vector lastAngles = cmd->viewangles;
 			static int lastCommand = 0;
 

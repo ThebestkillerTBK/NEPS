@@ -877,27 +877,19 @@ void Misc::soundESP() noexcept
 		return;
 
 	auto viewAngle = interfaces->engine->getViewAngles();
-	auto target = Helpers::getTarget(viewAngle, config->sound.soundESP.teammates);
+	auto target = Helpers::getTargetNoWall(viewAngle, config->sound.soundESP.teammates, config->sound.soundESP.fov, config->sound.soundESP.distance);
 
-	if (!target.entity || !target.entity->isAlive() || !target.entity->isAlive())
-		return;
-
-	float playerDistance = localPlayer->origin().distTo(target.entity->origin());
-	if (config->sound.soundESP.distance && config->sound.soundESP.distance < playerDistance)
-		return;
-
-	auto fov = Helpers::getFov(viewAngle, Helpers::getTargetAngle(target.entity, target.hitbox));
-	if (fov <= config->sound.soundESP.fov)
+	if (target)
 	{
 		static float previousTime = memory->globalVars->realtime;
-		if (memory->globalVars->realtime < previousTime + 0.2f)
+		if (memory->globalVars->realtime < previousTime + 0.276f)
 			return;
 		previousTime = memory->globalVars->realtime;
-
+		
 		if (const auto soundprecache = interfaces->networkStringTableContainer->findTable("soundprecache"))
-			soundprecache->addString(false, "buttons/bell1.wav");
+			soundprecache->addString(false, "buttons/blip2.wav");
 
-		interfaces->surface->playSound("buttons/bell1.wav");
+		interfaces->surface->playSound("buttons/blip2.wav");
 	}
 }
 

@@ -25,7 +25,7 @@ void Triggerbot::run(UserCmd *cmd) noexcept
 		return;
 
 	const auto activeWeapon = localPlayer->getActiveWeapon();
-	if (!activeWeapon || !activeWeapon->clip() || activeWeapon->nextPrimaryAttack() > time)
+	if (!activeWeapon || !activeWeapon->clip() || activeWeapon->nextPrimaryAttack() > time || activeWeapon->getWeaponType() == WeaponType::Knife)
 		return;
 
 	const auto &cfg = Config::Triggerbot::getRelevantConfig();

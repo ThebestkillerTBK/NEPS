@@ -45,6 +45,9 @@
     <Filter Include="SDK">
       <UniqueIdentifier>{6cc612f0-86fb-4bf6-b64a-74e10f5b498a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="lib\AntiVAC">
+      <UniqueIdentifier>{2107c6b7-8919-47ce-b272-aa3df23a0ebe}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="GUI.cpp">
@@ -180,7 +183,7 @@
       <Filter>Hacks</Filter>
     </ClCompile>
     <ClCompile Include="lib\AntiVAC\AntiDetection.cpp">
-      <Filter>Source</Filter>
+      <Filter>lib\AntiVAC</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -518,7 +521,7 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="lib\AntiVAC\AntiDetection.h">
-      <Filter>Headers</Filter>
+      <Filter>lib\AntiVAC</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

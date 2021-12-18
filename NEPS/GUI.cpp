@@ -772,8 +772,8 @@ void GUI::renderAimbotWindow(bool contentOnly) noexcept
 		ImGuiCustom::multiCombo("Hit group", config->aimbot[currentWeapon].hitGroup, "Head\0Chest\0Stomach\0Left arm\0Right arm\0Left leg\0Right leg\0");
 
 		ImGui::Checkbox("Between shots", &config->aimbot[currentWeapon].betweenShots);
-		//ImGui::SliderInt("First shot delay", &config->aimbot[currentWeapon].firstShotDelay, 0, 1000, "First shot delay %d ms");
-		ImGui::SliderInt("", &config->aimbot[currentWeapon].killDelay, 0, 2000, "Kill delay %d ms");
+		//ImGui::SliderInt("##finddelay", &config->aimbot[currentWeapon].firstShotDelay, 0, 1000, "Find delay %d ms");
+		ImGui::SliderInt("##killdelay", &config->aimbot[currentWeapon].killDelay, 0, 2000, "Kill delay %d ms");
 
 		ImGui::NextColumn();
 

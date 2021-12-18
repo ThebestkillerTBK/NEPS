@@ -10,59 +10,74 @@
 #include <shared_lib/imgui/imgui_internal.h>
 #include <fstream>
 
-Vector Helpers::getTargetAngle(Entity* target, int bone)
+Entity* Helpers::getTargetNoWall(Vector vangle, bool teamDamage, float fov1, float dist1)
 {
-	Vector bonePos, eyePos;
-
-	bonePos = target->getBonePosition(bone);
-	eyePos = localPlayer->getEyePosition();
-	eyePos.x = bonePos.x - eyePos.x;
-	eyePos.y = bonePos.y - eyePos.y;
-	eyePos.z = bonePos.z - eyePos.z;
-	eyePos.normalize();
-	Vector::vectorAngles2(eyePos, &eyePos);
-	Vector aimPunch = localPlayer->aimPunchAngle();
-	eyePos.x -= aimPunch.x * 2.0f;
-	eyePos.y -= aimPunch.y * 2.0f;
-	eyePos.z -= aimPunch.z * 2.0f;
-	eyePos.clamp();
-	return eyePos;
-}
-
-Helpers::EntHitbox Helpers::getTarget(Vector vangle, bool teamDamage)
-{
-	const int hitboxList[6] = { Hitbox_LeftFoot, Hitbox_RightFoot, Hitbox_Head, Hitbox_UpperChest, Hitbox_Thorax, Hitbox_Pelvis };
-	float bestFov, fov;
-
-	bestFov = 9999.0f;
 	for (const auto& player : GameData::players())
 	{
 		auto* entity = interfaces->entityList->getEntityFromHandle(player.handle);
-		if (!entity) continue;
+
+		if (!entity || entity == localPlayer.get() || entity->isDormant() || !entity->isAlive())
+			continue;
+
 		if (!teamDamage && !player.enemy)
 			continue;
+
 		const auto hitboxSet = entity->getHitboxSet();
 		if (!hitboxSet)
 			continue;
+
+		std::array<Matrix3x4, MAX_STUDIO_BONES> bones;
+		{
+			const auto& boneMatrices = entity->boneCache();
+			std::copy(boneMatrices.memory, boneMatrices.memory + boneMatrices.size, bones.begin());
+		}
+
+		std::vector<Vector> points;
+
 		for (int hitboxIdx = 0; hitboxIdx < hitboxSet->numHitboxes; hitboxIdx++)
 		{
-			fov = Helpers::getFov(vangle, Helpers::getTargetAngle(entity, hitboxList[hitboxIdx]));
-			if (fov < bestFov) {
-				bestFov = fov;
-				return Helpers::EntHitbox{ entity, hitboxList[hitboxIdx] };
+			if (hitboxIdx == Hitbox_LeftHand ||
+				hitboxIdx == Hitbox_RightHand ||
+				hitboxIdx == Hitbox_Neck ||
+				hitboxIdx == Hitbox_LowerChest ||
+				hitboxIdx == Hitbox_Belly)
+				continue;
+
+			const auto hitbox = *hitboxSet->getHitbox(hitboxIdx);
+
+			switch (hitboxIdx)
+			{
+			case Hitbox_LeftFoot:
+			case Hitbox_RightFoot:
+			case Hitbox_Head:
+			case Hitbox_UpperChest:
+			case Hitbox_Thorax:
+			case Hitbox_Pelvis:
+				points.emplace_back(((hitbox.bbMin + hitbox.bbMax) * 0.5f).transform(bones[hitbox.bone]));
+				break;
+			default:
+				points.emplace_back(hitbox.bbMax.transform(bones[hitbox.bone]));
+				break;
 			}
 		}
+		for (const auto& point : points)
+		{
+			const auto extrapolatedPoint = point + entity->velocity() * memory->globalVars->intervalPerTick;
+
+			const auto angle = Helpers::calculateRelativeAngle(localPlayer->getEyePosition(), extrapolatedPoint, interfaces->engine->getViewAngles() + localPlayer->aimPunchAngle());
+
+			const auto fov = std::hypot(angle.x, angle.y);
+			if (fov >= fov1)
+				continue;
+
+			const auto distance = localPlayer->getEyePosition().distTo(extrapolatedPoint);
+			if (distance >= dist1 && dist1)
+				continue;
+
+			return entity;
+		}
 	}
-	return Helpers::EntHitbox{};
-}
-
-float Helpers::getFov(Vector vangle, Vector angle)
-{
-	Vector a0, a1;
-
-	Vector::AngleVectors(vangle, a0);
-	Vector::AngleVectors(angle, a1);
-	return Helpers::radiansToDegrees(acos(a0.dotProduct(a1) / a0.length2()));
+	return nullptr;
 }
 
 template <std::size_t N>
