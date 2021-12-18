@@ -179,6 +179,9 @@
     <ClCompile Include="Hacks\KnifeBot.cpp">
       <Filter>Hacks</Filter>
     </ClCompile>
+    <ClCompile Include="lib\AntiVAC\AntiDetection.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GUI.h">
@@ -512,6 +515,9 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="res_defaultfont.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\AntiVAC\AntiDetection.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

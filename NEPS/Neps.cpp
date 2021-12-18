@@ -1,5 +1,10 @@
 #include <clocale>
 #include "Hooks.h"
+#include "lib/AntiVAC/AntiDetection.h"
+
+#ifndef NEPS_DEBUG
+AntiDetection anti;
+#endif
 
 extern "C" BOOL WINAPI _CRT_INIT(HMODULE moduleHandle, DWORD reason, LPVOID reserved);
 
