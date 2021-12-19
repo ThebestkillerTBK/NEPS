@@ -48,6 +48,7 @@ void EventListener::fireGameEvent(GameEvent *event)
 		GameData::clearProjectileList();
 		GameData::clearPlayersLastLocation();
 		Misc::preserveKillfeed(true);
+		Misc::damageList(event);
 		Aimbot::resetMissCounter();
 		[[fallthrough]];
 	case fnv::hash("item_purchase"):
@@ -64,6 +65,7 @@ void EventListener::fireGameEvent(GameEvent *event)
 		Aimbot::handleKill(*event);
 		break;
 	case fnv::hash("player_hurt"):
+		Misc::damageList(event);
 		Misc::teamDamageList(event);
 		Misc::playHitSound(*event);
 		Visuals::hitEffect(event);

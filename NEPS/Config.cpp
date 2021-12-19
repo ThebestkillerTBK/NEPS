@@ -769,6 +769,12 @@ static void from_json(const json& j, Config::Misc::StatusBar &s)
 	read(j, "Show GameGlobalVars", s.showGameGlobalVars);
 }
 
+static void from_json(const json& j, Config::Misc::DamageList& dl)
+{
+	read(j, "Enabled", dl.enabled);
+	read(j, "No Title Bar", dl.noTitleBar);
+}
+
 static void from_json(const json &j, Config::Misc &m)
 {
 	read(j, "Menu key", m.menuKey);
@@ -814,6 +820,7 @@ static void from_json(const json &j, Config::Misc &m)
 	read(j, "Player List", m.playerList);
 	read(j, "Debug Notice", m.debugNotice);
 	read(j, "All Cvar", m.allCvar);
+	read<value_t::object>(j, "Damage list", m.damageList);
 }
 
 static void from_json(const json &j, Config::Exploits &e)
@@ -1346,6 +1353,12 @@ static void to_json(json& j, const Config::Misc::StatusBar& o, const Config::Mis
 	WRITE("Show GameGlobalVars", showGameGlobalVars);
 }
 
+static void to_json(json& j, const Config::Misc::DamageList& o, const Config::Misc::DamageList& dummy = {})
+{
+	WRITE("Enabled", enabled);
+	WRITE("No Title Bar", noTitleBar);
+}
+
 static void to_json(json &j, const Config::Misc &o)
 {
 	const Config::Misc dummy = {};
@@ -1393,6 +1406,7 @@ static void to_json(json &j, const Config::Misc &o)
 	WRITE("Player List", playerList);
 	WRITE("Debug Notice", debugNotice);
 	WRITE("All Cvar", allCvar);
+	WRITE("Damage list", damageList);
 }
 
 static void to_json(json &j, const Config::Exploits &o)

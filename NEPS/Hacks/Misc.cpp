@@ -1680,7 +1680,7 @@ void Misc::purchaseList(GameEvent *event) noexcept
 	}
 }
 
-void Misc::statusBar()noexcept
+void Misc::statusBar() noexcept
 {
 	auto& cfg = config->misc.Sbar;
 	if (cfg.enabled == false)
@@ -1737,7 +1737,7 @@ void Misc::statusBar()noexcept
 	ImGui::End();
 }
 
-void Misc::playerList()
+void Misc::playerList() noexcept
 {
 	if (!config->misc.playerList)
 		return;
@@ -1753,10 +1753,9 @@ void Misc::playerList()
 	{
 		ImGui::SetNextWindowSize(ImClamp(ImVec2{}, {}, ImGui::GetIO().DisplaySize));
 		ImGui::Begin("Player List", nullptr, windowFlags);
-		if (ImGui::BeginTable("playerList", 12, ImGuiTableFlags_Borders | ImGuiTableFlags_Hideable | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Resizable))
+		if (ImGui::BeginTable("playerList", 11, ImGuiTableFlags_Borders | ImGuiTableFlags_Hideable | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Resizable))
 		{
 			ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 120.0f);
-			ImGui::TableSetupColumn("Team", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize);
 			ImGui::TableSetupColumn("Wins", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize);
 			ImGui::TableSetupColumn("Level", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize);
 			ImGui::TableSetupColumn("Ranking", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize);
@@ -1772,64 +1771,17 @@ void Misc::playerList()
 			ImGui::TableNextRow();
 			ImGui::PushID(ImGui::TableGetRowIndex());
 
-			if (ImGui::TableNextColumn())
-				if (localPlayer->team() == Team::CT)
-					ImGui::TextColored({ 0.0f, 0.2f, 1.0f, 1.0f }, localPlayer->getPlayerName().c_str());
-				else
-					ImGui::TextColored({ 0.7f, 0.7f, 0.0f, 1.0f }, localPlayer->getPlayerName().c_str());
+			GameData::Lock lock;
 
-			if (ImGui::TableNextColumn())
-				ImGui::Text("%s", localPlayer->team() == Team::CT ? "CT" : localPlayer->team() == Team::TT ? "T" : "Unknown");
-
-			if (ImGui::TableNextColumn())
-				ImGui::Text("%d", playerResource->competitiveWins()[localPlayer->index()]);
-
-			if (ImGui::TableNextColumn())
-				ImGui::Text("%d", playerResource->level()[localPlayer->index()]);
-
-			if (ImGui::TableNextColumn())
-				ImGui::Text(interfaces->localize->findAsUTF8(("RankName_" + std::to_string(playerResource->competitiveRanking()[localPlayer->index()])).c_str()));
-
-
-
-			if (ImGui::TableNextColumn())
-			{
-				ImGui::Text("%llu", localPlayer->getSteamID());
-				if (ImGui::SameLine(); ImGui::SmallButton("Copy"))
-					ImGui::SetClipboardText(std::to_string(localPlayer->getSteamID()).c_str());
-			}
-
-			if (ImGui::TableNextColumn())
-				ImGui::Text("%d", localPlayer->getUserId());
-
-			if (ImGui::TableNextColumn())
-				ImGui::TextColored({ 0.0f, 0.5f, 0.0f, 1.0f }, "$%d", localPlayer->account());
-
-			if (ImGui::TableNextColumn())
-			{
-				if (!localPlayer->isAlive())
-					ImGui::TextColored({ 1.0f, 0.0f, 0.0f, 1.0f }, "%s", "DEAD");
-				else
-					ImGui::Text("%d", localPlayer->health());
-			}
-
-			if (ImGui::TableNextColumn())
-				ImGui::Text("%d", localPlayer->armor());
-
-			if (ImGui::TableNextColumn())
-				ImGui::Text("%s", localPlayer->isAlive() && localPlayer->lastPlaceName() ? interfaces->localize->findAsUTF8(localPlayer->lastPlaceName()) : "Unknown");
-
-			if (ImGui::TableNextColumn())
-				ImGui::Text("0");
-			
 			std::vector<std::reference_wrapper<const PlayerData>> playersOrdered{ GameData::players().begin(), GameData::players().end() };
-			std::ranges::sort(playersOrdered, [](const PlayerData& a, const PlayerData& b) {
-				// enemies first
-				if (a.enemy != b.enemy)
-					return a.enemy && !b.enemy;
+			std::ranges::sort(playersOrdered, [](const PlayerData& a, const PlayerData& b) 
+			{
+			// enemies first
+			if (a.enemy != b.enemy)
+				return a.enemy && !b.enemy;
 
-				return a.handle < b.handle;
-				});
+			return a.handle < b.handle;
+			});
 
 			for (auto& player : playersOrdered)
 			{
@@ -1841,13 +1793,9 @@ void Misc::playerList()
 				if (!entity) continue;
 
 				if (ImGui::TableNextColumn())
-					if (entity->team() == Team::CT)
-						ImGui::TextColored({ 0.0f, 0.2f, 1.0f, 1.0f }, entity->getPlayerName().c_str());
-					else
-						ImGui::TextColored({ 0.7f, 0.7f, 0.0f, 1.0f }, entity->getPlayerName().c_str());
-
-				if (ImGui::TableNextColumn())
-					ImGui::Text("%s", entity->team() == Team::CT ? "CT" : entity->team() == Team::TT ? "T" : "Unknown");
+					entity->team() == Team::CT ? ImGui::TextColored({ 0.0f, 0.2f, 1.0f, 1.0f }, entity->getPlayerName().c_str())
+					: entity->team() == Team::TT ? ImGui::TextColored({ 0.5f, 0.5f, 0.0f, 1.0f }, entity->getPlayerName().c_str())
+					: ImGui::Text(entity->getPlayerName().c_str());
 
 				if (ImGui::TableNextColumn())
 				{
@@ -1948,6 +1896,81 @@ void Misc::selfNade(UserCmd* cmd)
 		cmd->viewangles.x = 89.0f;
 		cmd->buttons &= ~UserCmd::Button_Attack;
 		cmd->buttons &= ~UserCmd::Button_Attack2;
+	}
+}
+
+void Misc::damageList(GameEvent* event) noexcept
+{
+	if (!config->misc.damageList.enabled)
+		return;
+
+	static std::mutex mtx;
+	std::scoped_lock _{ mtx };
+
+	static std::unordered_map<int, int> damageCount;
+	static std::unordered_map<int, int> damagedBy;
+
+	if (event) {
+		switch (fnv::hashRuntime(event->getName())) {
+		case fnv::hash("round_start"):
+			damageCount.clear();
+			damagedBy.clear();
+			break;
+		case fnv::hash("player_hurt"):
+			if (const auto localPlayerId = localPlayer ? localPlayer->getUserId() : 0; localPlayerId && event->getInt("attacker") == localPlayerId && event->getInt("userid") != localPlayerId)
+				if (const auto player = interfaces->entityList->getEntity(interfaces->engine->getPlayerFromUserID(event->getInt("userid"))); player)
+					damageCount[player->handle()] += event->getInt("dmg_health");
+			if (const auto localPlayerId = localPlayer ? localPlayer->getUserId() : 0; event->getInt("userid") == localPlayerId)
+				if (const auto player = interfaces->entityList->getEntity(interfaces->engine->getPlayerFromUserID(event->getInt("attacker"))); player)
+					damagedBy[player->handle()] += event->getInt("dmg_health");
+			break;
+		}
+	}
+	else {
+
+		if (!interfaces->engine->isConnected())
+		{
+			damageCount.clear();
+			damagedBy.clear();
+			return;
+		}
+
+		ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+		if (config->misc.damageList.noTitleBar)
+			windowFlags |= ImGuiWindowFlags_NoTitleBar;
+
+		ImGui::SetNextWindowSize({ 200, 200 }, ImGuiCond_FirstUseEver);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowTitleAlign, { 0.5f, 0.5f });
+		ImGui::Begin("Damage list", nullptr, windowFlags);
+		ImGui::PopStyleVar();
+
+		std::vector<std::pair<int, int>> damageList(damageCount.cbegin(), damageCount.cend());
+		std::ranges::sort(damageList, std::ranges::greater{}, &std::pair<int, int>::second);
+		std::vector<std::pair<int, int>> damageList2(damagedBy.cbegin(), damagedBy.cend());
+		std::ranges::sort(damageList2, std::ranges::greater{}, &std::pair<int, int>::second);
+		GameData::Lock lock;
+
+		for (const auto & [handle, damage] : damageList) {
+			if (damage == 0)
+				continue;
+			if (const auto playerData = GameData::playerByHandle(handle)) {
+				const auto textSize = ImGui::CalcTextSize(playerData->name.c_str());
+				ImGui::TextWrapped("You to %s: ", playerData->name.c_str());
+				ImGui::SameLine(0.f, 1.f);
+				ImGui::TextWrapped("Dmg: %d | Health: %d", damage, playerData->health);
+			}
+		}
+		for (const auto & [handle, damage] : damageList2) {
+			if (damage == 0)
+				continue;
+			if (const auto playerData = GameData::playerByHandle(handle)) {
+				const auto textSize = ImGui::CalcTextSize(playerData->name.c_str());
+				ImGui::TextWrapped("%s to you: ", playerData->name.c_str());
+				ImGui::SameLine(0.f, 1.f);
+				ImGui::TextWrapped("Dmg: %d", damage);
+			}
+		}
+		ImGui::End();
 	}
 }
 
@@ -2153,7 +2176,7 @@ void Misc::teamDamageList(GameEvent *event)
 //		interfaces->surface->printText(watermark);
 //
 //		if (config->misc.watermark.rainbow)
-//			interfaces->surface->setDrawColor(Helpers::rainbowColor(config->misc.watermark.rainbowSpeed));
+//			interfaces->surface->setDrawColor(Helpers::rainbowColor(config->misc.watermarks.rainbowSpeed));
 //		else
 //			interfaces->surface->setDrawColor(static_cast<int>(config->misc.watermark.color[0] * 255), static_cast<int>(config->misc.watermark.color[1] * 255), static_cast<int>(config->misc.watermark.color[2] * 255), 255);
 //

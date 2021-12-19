@@ -33,6 +33,7 @@
 #include "SDK/Entity.h"
 #include "SDK/EntityList.h"
 #include "SDK/InputSystem.h"
+#include "SDK/Localize.h"
 #include "SDK/NetworkStringTable.h"
 #include "SDK/PlayerResource.h"
 #include "SDK/Surface.h"
@@ -2735,6 +2736,17 @@ void GUI::renderMiscWindow(bool contentOnly) noexcept
 		ImGui::EndPopup();
 	}
 
+	ImGui::Checkbox("Damage list", &config->misc.damageList.enabled);
+	ImGui::SameLine();
+
+	if (ImGui::ArrowButton("dmglist", ImGuiDir_Right))
+		ImGui::OpenPopup("##dmglist");
+
+	if (ImGui::BeginPopup("##dmglist")) {
+		ImGui::Checkbox("No Title Bar", &config->misc.damageList.noTitleBar);
+		ImGui::EndPopup();
+	}
+
 	ImGui::Checkbox("Player List", &config->misc.playerList);
 	ImGui::Checkbox("Bomb timer", &config->misc.bombTimer.enabled);
 	ImGui::Checkbox("Indicators", &config->misc.indicators.enabled);
@@ -3078,10 +3090,11 @@ void GUI::renderDebugWindow() noexcept
 			{
 				if (ImGui::BeginTable("shrek", 5))
 				{
-					ImGui::TableSetupColumn("Name");
-					ImGui::TableSetupColumn("Wins");
-					ImGui::TableSetupColumn("Level");
-					ImGui::TableSetupColumn("Ranking");
+					ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 120.0f);
+					ImGui::TableSetupColumn("Wins", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize);
+					ImGui::TableSetupColumn("Level", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize);
+					ImGui::TableSetupColumn("Ranking", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize);
+					ImGui::TableSetupColumn("UserID", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize);
 					ImGui::TableHeadersRow();
 
 					ImGui::TableNextRow();
@@ -3097,7 +3110,7 @@ void GUI::renderDebugWindow() noexcept
 						ImGui::Text("%i", playerResource->level()[localPlayer->index()]);
 
 					if (ImGui::TableNextColumn())
-						ImGui::Text("%i", playerResource->competitiveRanking()[localPlayer->index()]);
+						ImGui::Text(interfaces->localize->findAsUTF8(("RankName_" + std::to_string(playerResource->competitiveRanking()[localPlayer->index()])).c_str()));
 
 					if (ImGui::TableNextColumn())
 						ImGui::Text("%d", localPlayer->getUserId());
@@ -3130,7 +3143,7 @@ void GUI::renderDebugWindow() noexcept
 							ImGui::Text("%i", playerResource->level()[entity->index()]);
 
 						if (ImGui::TableNextColumn())
-							ImGui::Text("%i", playerResource->competitiveRanking()[entity->index()]);
+							ImGui::Text(interfaces->localize->findAsUTF8(("RankName_" + std::to_string(playerResource->competitiveRanking()[entity->index()])).c_str()));
 
 						if (ImGui::TableNextColumn())
 							ImGui::Text("%d", entity->getUserId());

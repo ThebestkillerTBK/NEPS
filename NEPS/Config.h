@@ -522,6 +522,11 @@ public:
 			bool aimbot = false;
 		} knifeBot;
 
+		struct DamageList {
+			bool enabled = false;
+			bool noTitleBar = false;
+		} damageList;
+
 		KeyBind prepareRevolver;
 		int selfNade = 0;
 		int quickHealthshotKey = 0;
