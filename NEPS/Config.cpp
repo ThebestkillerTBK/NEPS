@@ -239,6 +239,12 @@ static void from_json(const json &j, Color4ToggleHealthBased &ctj)
 	read(j, "Health Based", ctj.healthBased);
 }
 
+static void from_json(const json &j, Color4OutlineToggleHealthBased &ctj)
+{
+	from_json(j, static_cast<Color4OutlineToggle &>(ctj));
+	read(j, "Health Based", ctj.healthBased);
+}
+
 static void from_json(const json &j, Color4ToggleThicknessRounding &cttr)
 {
 	from_json(j, static_cast<Color4ToggleRounding &>(cttr));
@@ -1012,6 +1018,12 @@ static void to_json(json &j, const Color4ToggleThickness &o, const Color4ToggleT
 static void to_json(json &j, const Color4ToggleHealthBased &o, const Color4ToggleHealthBased&dummy = {})
 {
 	to_json(j, static_cast<const Color4Toggle &>(o), dummy);
+	WRITE("Health Based", healthBased);
+}
+
+static void to_json(json &j, const Color4OutlineToggleHealthBased&o, const Color4OutlineToggleHealthBased&dummy = {})
+{
+	to_json(j, static_cast<const Color4OutlineToggle&>(o), dummy);
 	WRITE("Health Based", healthBased);
 }
 

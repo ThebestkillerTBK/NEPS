@@ -123,7 +123,7 @@ void GameData::update() noexcept
 						if (const auto it = std::ranges::find(projectileData, entity->handle(), &ProjectileData::handle); it != projectileData.end())
 						{
 							if (!it->exploded)
-								it->explosionTime = memory->globalVars->realtime;
+								it->explosionTime = memory->globalVars->realTime;
 							it->exploded = true;
 						}
 						break;
@@ -415,7 +415,7 @@ void ProjectileData::update(Entity* projectile) noexcept
 	static_cast<BaseData&>(*this) = { projectile };
 
 	if (const auto &pos = projectile->getAbsOrigin(); trajectory.size() < 1 || trajectory[trajectory.size() - 1].second != pos)
-		trajectory.emplace_back(memory->globalVars->realtime, pos);
+		trajectory.emplace_back(memory->globalVars->realTime, pos);
 }
 
 void PlayerData::update(Entity *entity) noexcept
@@ -474,7 +474,7 @@ void PlayerData::update(Entity *entity) noexcept
 	money = entity->account();
 	userId = entity->getUserId();
 	team = entity->team() == Team::CT ? "CT" : "T";
-	lastContactTime = alive ? memory->globalVars->realtime : 0.0f;
+	lastContactTime = alive ? memory->globalVars->realTime : 0.0f;
 	lastPlaceName = entity->isAlive() && entity->lastPlaceName() ? interfaces->localize->findAsUTF8(entity->lastPlaceName()) : lastPlaceName;
 
 	isBot = entity->isBot();
@@ -562,7 +562,7 @@ void PlayerData::update(Entity *entity) noexcept
 float PlayerData::fadingAlpha() const noexcept
 {
 	constexpr float fadeTime = 1.50f;
-	return std::clamp(1.0f - std::max(memory->globalVars->realtime - lastContactTime - 0.25f, 0.0f) / fadeTime, 0.0f, 1.0f);
+	return std::clamp(1.0f - std::max(memory->globalVars->realTime - lastContactTime - 0.25f, 0.0f) / fadeTime, 0.0f, 1.0f);
 }
 
 WeaponData::WeaponData(Entity *entity) noexcept : BaseData{entity}
@@ -747,10 +747,10 @@ InfernoData::InfernoData(Entity *inferno) noexcept
 float SmokeData::fadingAlpha() const noexcept
 {
 	constexpr float fadeTime = 1.f;
-	return std::clamp(1.0f - (memory->globalVars->realtime - (explosionTime + SMOKEGRENADE_LIFETIME)) / fadeTime, 0.0f, 1.0f);
+	return std::clamp(1.0f - (memory->globalVars->realTime - (explosionTime + SMOKEGRENADE_LIFETIME)) / fadeTime, 0.0f, 1.0f);
 }
 
-SmokeData::SmokeData(const Vector& origin, int handle) noexcept : origin{ origin }, handle{ handle }, explosionTime{ memory->globalVars->realtime } {}
+SmokeData::SmokeData(const Vector& origin, int handle) noexcept : origin{ origin }, handle{ handle }, explosionTime{ memory->globalVars->realTime } {}
 
 void SessionData::update() noexcept
 {

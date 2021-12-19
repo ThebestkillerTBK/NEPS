@@ -907,9 +907,8 @@ void GUI::renderAntiAimWindow(bool contentOnly) noexcept
 
 		if (ImGui::BeginPopup("##desync"))
 		{
-			ImGui::Combo("Mode", &currentConfig.peekMode, "Off\0Peek real\0Peek fake\0Jitter\0");
 			ImGui::SetNextItemWidth(100);
-			ImGui::Combo("Desync type", &currentConfig.desyncType, "Micro movement\0Opposite\0Interchanged\0Fake desync\0Sway\0Off\0");
+			ImGui::Combo("Mode", &currentConfig.peekMode, "Off\0Peek real\0Peek fake\0Jitter\0");
 			ImGui::Checkbox("Micro movement", &currentConfig.microMovement);
 			ImGuiCustom::keyBind("Flip key", &currentConfig.flipKey);
 			ImGuiCustom::colorPicker("Visualize", currentConfig.visualizeSide);

@@ -40,6 +40,10 @@ struct Color4OutlineToggle : Color4Outline
 {
 	bool enabled = false;
 };
+struct Color4OutlineToggleHealthBased : Color4OutlineToggle
+{
+	bool healthBased = false;
+};
 
 struct Color4OutlineToggleThickness : Color4OutlineToggle
 {
@@ -122,7 +126,7 @@ struct Bar : Color4OutlineToggle
 	// What
 };
 
-struct HealthBarType : Color4BorderToggle {
+struct HealthBarType : Color4OutlineToggle {
 	enum Type {
 		Gradient = 0,
 		Solid,
@@ -139,16 +143,13 @@ struct Player : Shared
 	Color4OutlineToggle flashDuration;
 	bool audibleOnly = false;
 	bool spottedOnly = false;
-	Color4BorderToggle healthBar;
 	HealthBarType healthBarType;
-	Color4BorderToggle health;
-	Color4BorderToggleThickness skeleton;
 	Color4OutlineToggle healthBar;
 	Color4OutlineToggle health;
 	Color4OutlineToggleThickness skeleton;
 	Box headBox;
 	Color4OutlineToggle flags;
-	Color4OutlineToggle offscreen = {1.0f, 1.0f, 1.0f, 0.5f};
+	Color4OutlineToggleHealthBased offscreen = {1.0f, 1.0f, 1.0f, 0.5f};
 	Color4ToggleThickness lineOfSight;
 
 	using Shared::operator=;

@@ -504,12 +504,12 @@ void Visuals::drawReloadProgress(ImDrawList* drawList) noexcept
 	if (activeWeapon && activeWeapon->isInReload())
 	{
 		if (!reloadLength)
-			reloadLength = activeWeapon->nextPrimaryAttack() - memory->globalVars->currenttime;
+			reloadLength = activeWeapon->nextPrimaryAttack() - memory->globalVars->currentTime;
 
 		constexpr int segments = 40;
 		constexpr float pi = std::numbers::pi_v<float>;
 		const auto arc270 = (3 * pi) / 2;
-		float reloadTime = activeWeapon->nextPrimaryAttack() - memory->globalVars->currenttime;
+		float reloadTime = activeWeapon->nextPrimaryAttack() - memory->globalVars->currentTime;
 		const float fraction = std::clamp((reloadTime / reloadLength), 0.0f, 1.0f);
 
 		drawList->PathArcTo(ImGui::GetIO().DisplaySize / 2.0f + ImVec2{ 1.0f, 1.0f }, 20.0f, arc270 - (2 * pi * fraction), arc270, segments);
@@ -542,7 +542,7 @@ void Visuals::damageIndicator(GameEvent *event, ImDrawList* drawList) noexcept
 	{
 		if (localPlayer && event->getInt("attacker") == localPlayer->getUserId())
 		{
-			lastHitTime = memory->globalVars->realtime;
+			lastHitTime = memory->globalVars->realTime;
 			hitMarkerDmg = event->getInt("dmg_health");
 			hitMessage = true;
 			if (event->getInt("userid") == localPlayer->getUserId())
@@ -562,7 +562,7 @@ void Visuals::damageIndicator(GameEvent *event, ImDrawList* drawList) noexcept
 		return;
 	}
 
-	const auto timeSinceHit = memory->globalVars->realtime - lastHitTime;
+	const auto timeSinceHit = memory->globalVars->realTime - lastHitTime;
 
 	if (timeSinceHit > config->visuals.damageIndicatorTime)
 		return;
@@ -789,7 +789,7 @@ void Visuals::drawSmokeTimer(ImDrawList* drawList) noexcept
 
 	GameData::Lock lock;
 	for (const auto& smoke : GameData::smokes()) {
-		const auto time = std::clamp(smoke.explosionTime + SMOKEGRENADE_LIFETIME - memory->globalVars->realtime, 0.f, SMOKEGRENADE_LIFETIME);
+		const auto time = std::clamp(smoke.explosionTime + SMOKEGRENADE_LIFETIME - memory->globalVars->realTime, 0.f, SMOKEGRENADE_LIFETIME);
 		std::ostringstream text; text << std::fixed << std::showpoint << std::setprecision(1) << time << " sec.";
 
 		auto text_size = ImGui::CalcTextSize(text.str().c_str());
@@ -947,11 +947,11 @@ void Visuals::drawNadeBlast(ImDrawList* drawList) noexcept
 
 	GameData::Lock lock;
 	for (const auto& projectile : GameData::projectiles()) {
-		if (!projectile.exploded || projectile.explosionTime + blastDuration < memory->globalVars->realtime)
+		if (!projectile.exploded || projectile.explosionTime + blastDuration < memory->globalVars->realTime)
 			continue;
 
 		for (const auto& point : spherePoints) {
-			const auto radius = ImLerp(10.0f, 70.0f, (memory->globalVars->realtime - projectile.explosionTime) / blastDuration);
+			const auto radius = ImLerp(10.0f, 70.0f, (memory->globalVars->realTime - projectile.explosionTime) / blastDuration);
 			if (ImVec2 screenPos; Helpers::worldToScreen(projectile.coordinateFrame.origin() + point * radius, screenPos)) {
 				drawPrecomputedPrimitive(drawList, screenPos, color, vertices, indices);
 			}

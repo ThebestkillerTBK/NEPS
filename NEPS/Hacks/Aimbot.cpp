@@ -447,7 +447,7 @@ void Aimbot::handleKill(GameEvent& event) noexcept
 	if (const auto localUserId = localPlayer->getUserId(); event.getInt("attacker") != localUserId || event.getInt("userid") == localUserId)
 		return;
 
-	lastKillTime = memory->globalVars->realtime;
+	lastKillTime = memory->globalVars->realTime;
 	return;
 }
 
@@ -491,7 +491,7 @@ void Aimbot::run(UserCmd *cmd) noexcept
     if (!cfg.ignoreFlash && localPlayer->isFlashed())
         return;
 
-	const auto now = memory->globalVars->realtime;
+	const auto now = memory->globalVars->realTime;
 
 	if (lastKillTime + config->aimbot[weaponIndex].killDelay / 1000.0f > now)
 		return;

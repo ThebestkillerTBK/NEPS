@@ -293,7 +293,7 @@ void AntiAim::run(UserCmd* cmd, const Vector& currentViewAngles, bool& sendPacke
 		}
 		else if (lbyUpdate)
 		{
-			if (cfg.desyncType != 0 && cfg.microMovement)
+			if (cfg.desync != 0 && cfg.microMovement)
 				microMovement(cmd);
 
 			sendPacket = false;
@@ -342,7 +342,7 @@ void AntiAim::run(UserCmd* cmd, const Vector& currentViewAngles, bool& sendPacke
 	case 2:
 		factor = 360.0 / M_PHI;
 		factor *= 25;
-		cmd->viewangles.y = fmodf(memory->globalVars->currenttime * factor, 360.0);
+		cmd->viewangles.y = fmodf(memory->globalVars->currentTime * factor, 360.0);
 		break;
 	case 3:
 		trigger += 10.0f;

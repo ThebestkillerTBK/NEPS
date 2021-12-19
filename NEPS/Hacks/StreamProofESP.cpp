@@ -285,7 +285,7 @@ struct FontPush
 	}
 };
 
-static void drawHealthBar(const ImVec2 &pos, float height, int health, const Color4OutlineToggle &healthBarConfig, const Color4OutlineToggle &text, float distance, float cull) noexcept
+static void drawHealthBar(const HealthBarType& config, const ImVec2 &pos, float height, int health, const Color4OutlineToggle &healthBarConfig, const Color4OutlineToggle &text, float distance, float cull) noexcept
 {
 	const int originalHealth = health;
 	health = std::clamp(health, 0, 100);
@@ -316,17 +316,11 @@ static void drawHealthBar(const ImVec2 &pos, float height, int health, const Col
 			ImVec2 min = pos;
 			ImVec2 max = min + ImVec2{ width, height };
 			const auto color = config.type == HealthBarType::HealthBased ? Helpers::healthColor(std::clamp(health / 100.0f, 0.0f, 1.0f)) : Helpers::calculateColor(healthBarConfig);
-			if (healthBarConfig.border)
+			if (healthBarConfig.outline)
 				drawList->AddRectFilled(pos + ImVec2{ 1.0f, 1.0f }, pos + ImVec2{ width + 1.0f, height + 1.0f }, color & IM_COL32_A_MASK);
 			drawList->AddRectFilled(pos, pos + ImVec2{ width, height }, color);
 		}
 		drawList->PopClipRect();
-		const auto color = Helpers::calculateColor(healthBarConfig);
-
-		if (healthBarConfig.outline)
-			drawList->AddRectFilled(min - ImVec2{1.0f, 1.0f}, max + ImVec2{1.0f, 1.0f}, color & IM_COL32_A_MASK);
-
-		drawList->AddRectFilled(min + ImVec2{0.0f, (100 - health) / 100.0f * height}, max, color);
 	}
 
 
@@ -531,7 +525,7 @@ static void drawPlayerSkeleton(const Color4OutlineToggleThickness &config, const
 		drawList->AddLine(bonePoint, parentPoint, color, config.thickness);
 }
 
-static void drawOffscreen(const Color4OutlineToggle &config, const PlayerData &playerData) noexcept
+static void drawOffscreen(const Color4OutlineToggleHealthBased &config, const PlayerData &playerData) noexcept
 {
 	if (!config.enabled)
 		return;
@@ -553,7 +547,7 @@ static void drawOffscreen(const Color4OutlineToggle &config, const PlayerData &p
 	const auto health = playerData.health;
 	const auto healthCol = Helpers::healthColor(std::clamp(health / 100.0f, 0.0f, 1.0f));
 	const auto color = Helpers::calculateColor(config);
-	ImGuiCustom::drawTriangleFromCenter(drawList, pos * 300, color);
+	ImGuiCustom::drawTriangleFromCenter(drawList, pos * 300, color, config.outline);
 	if (config.healthBased) ImGuiCustom::drawText(drawList, NULL, NULL, healthCol, healthCol & IM_COL32_A_MASK, std::to_string(health).c_str(), ImGui::GetIO().DisplaySize / 2 + pos * 300);
 }
 

@@ -401,7 +401,7 @@ void Misc::AutoDefuse(UserCmd* cmd) noexcept
 
 	if (!bomb_ || !bomb_->c4Ticking()) return;
 
-	float bombTimer = bomb.blowTime - memory->globalVars->currenttime;
+	float bombTimer = bomb.blowTime - memory->globalVars->currentTime;
 	float distance = localPlayer->origin().distTo(bomb_->origin());
 	bool distanceok = distance <= 75.f;
 	bool cannotDefuse = (bomb.blowTime < bomb.defuseCountDown);
@@ -474,11 +474,11 @@ void Misc::stealNames() noexcept
 
 	static std::vector<int> stolenIds;
 
-	static float previousTime = memory->globalVars->realtime;
-	if (memory->globalVars->realtime < previousTime + 0.3f)
+	static float previousTime = memory->globalVars->realTime;
+	if (memory->globalVars->realTime < previousTime + 0.3f)
 		return;
 
-	previousTime = memory->globalVars->realtime;
+	previousTime = memory->globalVars->realTime;
 
 
 	for (int i = 1; i <= memory->globalVars->maxClients; ++i)
@@ -635,12 +635,12 @@ void Misc::bunnyHop(UserCmd* cmd) noexcept
 
 	if (!wasLastTimeOnGround && hasLanded) {
 		bhopInSeries++;
-		lastTimeInAir = memory->globalVars->realtime;
+		lastTimeInAir = memory->globalVars->realTime;
 		hasLanded = false;
 	}
 	if (wasLastTimeOnGround) {
 		hasLanded = true;
-		if (memory->globalVars->realtime - lastTimeInAir >= 3) {
+		if (memory->globalVars->realTime - lastTimeInAir >= 3) {
 			bhopInSeries = 0;
 		}
 	}
@@ -882,10 +882,10 @@ void Misc::soundESP() noexcept
 
 	if (target)
 	{
-		static float previousTime = memory->globalVars->realtime;
-		if (memory->globalVars->realtime < previousTime + 0.276f)
+		static float previousTime = memory->globalVars->realTime;
+		if (memory->globalVars->realTime < previousTime + 0.276f)
 			return;
-		previousTime = memory->globalVars->realtime;
+		previousTime = memory->globalVars->realTime;
 		
 		if (const auto soundprecache = interfaces->networkStringTableContainer->findTable("soundprecache"))
 			soundprecache->addString(false, "buttons/blip2.wav");
@@ -1727,8 +1727,8 @@ void Misc::statusBar() noexcept
 		}
 
 		if (cfg.showGameGlobalVars) {
-			ImGui::Text("CurTime: %.1f", memory->globalVars->currenttime);
-			ImGui::Text("RealTime: %.1f", memory->globalVars->realtime);
+			ImGui::Text("CurTime: %.1f", memory->globalVars->currentTime);
+			ImGui::Text("RealTime: %.1f", memory->globalVars->realTime);
 		}
 	}
 	ImGui::End();
