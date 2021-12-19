@@ -909,7 +909,6 @@ void GUI::renderAntiAimWindow(bool contentOnly) noexcept
 		{
 			ImGui::SetNextItemWidth(100);
 			ImGui::Combo("Mode", &currentConfig.peekMode, "Off\0Peek real\0Peek fake\0Jitter\0");
-			ImGui::Checkbox("Micro movement", &currentConfig.microMovement);
 			ImGuiCustom::keyBind("Flip key", &currentConfig.flipKey);
 			ImGuiCustom::colorPicker("Visualize", currentConfig.visualizeSide);
 			ImGui::SliderInt("Left limit", &currentConfig.leftLimit, 0, 60, "%d");
@@ -943,7 +942,7 @@ void GUI::renderAntiAimWindow(bool contentOnly) noexcept
 		}
 
 		ImGui::SetNextItemWidth(130);
-		ImGui::Combo("AA Type", &currentConfig.AAType, "None\0Jitter\0FastSpin\0Small Jitter\0Side Lisp\0");
+		ImGui::Combo("AA Type", &currentConfig.AAType, "None\0Jitter\0Fast spin\0Small shake\0Side\0Big Shake\0");
 	}
 
 	ImGui::EndChild();

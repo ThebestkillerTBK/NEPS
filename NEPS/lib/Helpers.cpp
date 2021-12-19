@@ -702,21 +702,13 @@ std::string Helpers::decode(std::string in) noexcept
 	return out;
 }
 
-bool Helpers::lbyUpdate(Entity *animatable, float &nextUpdate, bool update) noexcept
+bool Helpers::lbyUpdate(Entity* animatable, float& nextUpdate) noexcept
 {
-	static bool lastValue = false;
-
-	if (!update)
-		return lastValue;
-
 	if (!animatable)
 		return false;
 
-	if (!animatable->isPlayer()) 
-	{
-		lastValue = false;
+	if (!animatable->isPlayer())
 		return false;
-	}
 
 	const auto time = memory->globalVars->serverTime();
 
@@ -725,9 +717,8 @@ bool Helpers::lbyUpdate(Entity *animatable, float &nextUpdate, bool update) noex
 	else if (time >= nextUpdate)
 	{
 		nextUpdate = time + 1.1f;
-		lastValue = true;
 		return true;
 	}
-	lastValue = false;
+
 	return false;
 }

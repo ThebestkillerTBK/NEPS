@@ -15,17 +15,13 @@
 
 #define M_PHI 1.61803398874989484820; // golden ratio
 
-static float nextLbyUpdate;
-
-static bool canAntiAim(UserCmd *cmd) noexcept
+static bool canAntiAim(UserCmd* cmd) noexcept
 {
 	if (!localPlayer || !localPlayer->isAlive())
 		return false;
 
-	Helpers::lbyUpdate(localPlayer.get(), nextLbyUpdate, true);
-
 	auto weapon = localPlayer->getActiveWeapon();
-	
+
 	if (!weapon)
 		return false;
 
@@ -51,7 +47,7 @@ static bool canAntiAim(UserCmd *cmd) noexcept
 	return true;
 }
 
-static void microMovement(UserCmd *cmd) noexcept
+static void microMovement(UserCmd* cmd) noexcept
 {
 	if (std::fabsf(cmd->sidemove) < 5.0f)
 	{
@@ -61,6 +57,9 @@ static void microMovement(UserCmd *cmd) noexcept
 			cmd->sidemove = cmd->tickCount & 1 ? 1.1f : -1.1f;
 	}
 }
+
+static signed char dir = 0;
+static bool flip = true;
 
 bool autoDirection(Vector eyeAngle) noexcept
 {
@@ -100,12 +99,11 @@ bool autoDirection(Vector eyeAngle) noexcept
 	return true;
 }
 
-static signed char dir = 0;
-static bool flip = true;
-
 void AntiAim::run(UserCmd* cmd, const Vector& currentViewAngles, bool& sendPacket) noexcept
 {
 	if (!canAntiAim(cmd)) return;
+
+
 
 	const auto networkChannel = interfaces->engine->getNetworkChannel();
 	if (!networkChannel)
@@ -121,6 +119,7 @@ void AntiAim::run(UserCmd* cmd, const Vector& currentViewAngles, bool& sendPacke
 		AntiAim::legit(cmd, currentViewAngles, sendPacket);
 
 	bool fakeDucking = false;
+
 	if (static Helpers::KeyBindState flag; config->exploits.fakeDuckPackets && flag[config->exploits.fakeDuck])
 	{
 		sendPacket = networkChannel->chokedPackets >= config->exploits.fakeDuckPackets;
@@ -136,7 +135,7 @@ void AntiAim::run(UserCmd* cmd, const Vector& currentViewAngles, bool& sendPacke
 
 		fakeDucking = true;
 	}
-	
+
 	if (Helpers::attacking(cmd->buttons & UserCmd::Button_Attack, cmd->buttons & UserCmd::Button_Attack2))
 		return;
 
@@ -257,34 +256,36 @@ void AntiAim::run(UserCmd* cmd, const Vector& currentViewAngles, bool& sendPacke
 		default:
 			break;
 		}
+
 		float leftDesyncAngle = cfg.leftLimit * 2.f;
 		float rightDesyncAngle = cfg.rightLimit * 2.f;
 		float a = 0.0f;
 		float b = 0.0f;
+
 		switch (cfg.desync)
 		{
 		case 1:
-			b = flip ? 120.0f : -120.0f;
+			b = flip ? leftDesyncAngle : -rightDesyncAngle;
 			break;
 		case 2:
-			a = flip ? -120.0f : 120.0f;
-			b = flip ? 120.0f : -120.0f;
+			a = flip ? -leftDesyncAngle : rightDesyncAngle;
+			b = flip ? leftDesyncAngle : -rightDesyncAngle;
 			break;
 		case 3:
-			a = flip ? -120.0f : 120.0f;
-			b = flip ? 60.0f : -60.0f;
+			a = flip ? -leftDesyncAngle : rightDesyncAngle;
+			b = flip ? leftDesyncAngle / 2.f : -rightDesyncAngle / 2.f;
 			break;
 		case 4:
 		case 5:
-			a = flip ? 120.0f : -120.0f;
-			b = flip ? 120.0f : -120.0f;
+			a = flip ? leftDesyncAngle : -rightDesyncAngle;
+			b = flip ? leftDesyncAngle : -rightDesyncAngle;
 			break;
 		}
 
-		if (cfg.flipKey && GetAsyncKeyState(cfg.flipKey) & 1 || cfg.desync == 4 && lbyUpdate)
+		if (cfg.flipKey && GetAsyncKeyState(cfg.flipKey) & 1 || cfg.desync == 5 && lbyUpdate)
 			flip = !flip;
 
-		if (cfg.desync == 0)
+		if (cfg.desync == 1)
 		{
 			microMovement(cmd);
 
@@ -293,9 +294,6 @@ void AntiAim::run(UserCmd* cmd, const Vector& currentViewAngles, bool& sendPacke
 		}
 		else if (lbyUpdate)
 		{
-			if (cfg.desync != 0 && cfg.microMovement)
-				microMovement(cmd);
-
 			sendPacket = false;
 			cmd->viewangles.y += a;
 		}
@@ -305,7 +303,7 @@ void AntiAim::run(UserCmd* cmd, const Vector& currentViewAngles, bool& sendPacke
 
 	if (cfg.yaw)
 		cmd->viewangles.y += cfg.yawAngle;
-			
+
 	double factor;
 	static float trigger;
 	int random;
@@ -346,10 +344,10 @@ void AntiAim::run(UserCmd* cmd, const Vector& currentViewAngles, bool& sendPacke
 		break;
 	case 3:
 		trigger += 10.0f;
-		cmd->viewangles.y -= trigger > 50.f ? -60.f : 60.f;
+		cmd->viewangles.y -= std::clamp(trigger > 0.f ? -12.f * trigger / 10.f : 12.f * trigger / 10.f, -180.f, 180.f);;
 
-		if (trigger > 100.0f)
-			trigger = 0.0f;
+		if (trigger > 50.f)
+			trigger = -50.f;
 		break;
 	case 4:
 		temp = cmd->viewangles.y + 90.0f;
@@ -363,15 +361,22 @@ void AntiAim::run(UserCmd* cmd, const Vector& currentViewAngles, bool& sendPacke
 		temp += 1800000.0f;
 		cmd->viewangles.y = temp;
 		break;
+	case 5:
+		trigger += 10.0f;
+		cmd->viewangles.y -= std::clamp(trigger > 0.f ? -24.f * trigger / 10.f : 24.f * trigger / 10.f, -180.f, 180.f);
+
+		if (trigger > 50.f)
+			trigger = -50.f;
+		break;
 	}
 }
 
-bool AntiAim::fakePitch(UserCmd *cmd) noexcept
+bool AntiAim::fakePitch(UserCmd* cmd) noexcept
 {
 	if (!canAntiAim(cmd))
 		return false;
 
-	const auto &cfg = Config::AntiAim::getRelevantConfig();
+	const auto& cfg = Config::AntiAim::getRelevantConfig();
 
 	if (cfg.fakeUp && !Helpers::attacking(cmd->buttons & UserCmd::Button_Attack, cmd->buttons & UserCmd::Button_Attack2))
 	{
@@ -388,6 +393,7 @@ void AntiAim::legit(UserCmd* cmd, const Vector& currentViewAngles, bool& sendPac
 	if (!canAntiAim(cmd))
 		return;
 
+	static float nextLbyUpdate;
 	const bool lbyUpdate = Helpers::lbyUpdate(localPlayer.get(), nextLbyUpdate);
 	const auto& cfg = Config::AntiAim::getRelevantConfig();
 
@@ -425,7 +431,7 @@ void AntiAim::legit(UserCmd* cmd, const Vector& currentViewAngles, bool& sendPac
 	}
 }
 
-void AntiAim::visualize(ImDrawList *drawList) noexcept
+void AntiAim::visualize(ImDrawList* drawList) noexcept
 {
 	if (!localPlayer)
 		return;
@@ -436,7 +442,7 @@ void AntiAim::visualize(ImDrawList *drawList) noexcept
 	if (localPlayer->moveType() == MoveType::Noclip || localPlayer->moveType() == MoveType::Ladder)
 		return;
 
-	const auto &cfg = Config::AntiAim::getRelevantConfig();
+	const auto& cfg = Config::AntiAim::getRelevantConfig();
 
 	if (cfg.visualizeDirection.enabled && cfg.direction)
 	{
@@ -444,13 +450,13 @@ void AntiAim::visualize(ImDrawList *drawList) noexcept
 		switch (dir)
 		{
 		case -1:
-			ImGuiCustom::drawTriangleFromCenter(drawList, {-200, 0}, color, cfg.visualizeDirection.outline);
+			ImGuiCustom::drawTriangleFromCenter(drawList, { -200, 0 }, color, cfg.visualizeDirection.outline);
 			break;
 		case 0:
-			ImGuiCustom::drawTriangleFromCenter(drawList, {0, 100}, color, cfg.visualizeDirection.outline);
+			ImGuiCustom::drawTriangleFromCenter(drawList, { 0, 100 }, color, cfg.visualizeDirection.outline);
 			break;
 		case 1:
-			ImGuiCustom::drawTriangleFromCenter(drawList, {200, 0}, color, cfg.visualizeDirection.outline);
+			ImGuiCustom::drawTriangleFromCenter(drawList, { 200, 0 }, color, cfg.visualizeDirection.outline);
 			break;
 		}
 	}
@@ -459,8 +465,8 @@ void AntiAim::visualize(ImDrawList *drawList) noexcept
 	{
 		const auto color = Helpers::calculateColor(cfg.visualizeSide);
 		if (flip)
-			ImGuiCustom::drawTriangleFromCenter(drawList, {100, 0}, color, cfg.visualizeSide.outline);
+			ImGuiCustom::drawTriangleFromCenter(drawList, { 100, 0 }, color, cfg.visualizeSide.outline);
 		else
-			ImGuiCustom::drawTriangleFromCenter(drawList, {-100, 0}, color, cfg.visualizeSide.outline);
+			ImGuiCustom::drawTriangleFromCenter(drawList, { -100, 0 }, color, cfg.visualizeSide.outline);
 	}
 }

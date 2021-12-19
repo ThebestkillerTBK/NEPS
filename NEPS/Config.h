@@ -134,7 +134,6 @@ public:
 		int leftKey = 0;
 		Color4OutlineToggle visualizeDirection = {1.0f, 1.0f, 1.0f, 0.5f};
 		int desync = 0;
-		bool microMovement = false;
 		bool fakeUp = false;
 		int flipKey = 0;
 		Color4OutlineToggle visualizeSide = {1.0f, 1.0f, 1.0f, 0.5f};

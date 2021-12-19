@@ -456,7 +456,6 @@ static void from_json(const json &j, Config::AntiAim &a)
 	read(j, "Dance", a.dance);
 	read(j, "AA", a.AAType);
 	read(j, "Peek mode", a.peekMode);
-	read(j, "Micro movement", a.microMovement);
 }
 
 static void from_json(const json &j, Config::Glow &g)
@@ -1226,7 +1225,6 @@ static void to_json(json &j, const Config::AntiAim &o, const Config::AntiAim &du
 	WRITE("Dance", dance);
 	WRITE("AA", AAType);
 	WRITE("Peek mode", peekMode);
-	WRITE("Micro movement", microMovement);
 }
 
 static void to_json(json &j, const Config::Glow &o, const Config::Glow &dummy = {})
