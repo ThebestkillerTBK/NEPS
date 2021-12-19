@@ -491,10 +491,7 @@ void Aimbot::run(UserCmd *cmd) noexcept
     if (!cfg.ignoreFlash && localPlayer->isFlashed())
         return;
 
-	const auto now = memory->globalVars->realTime;
-
-	if (lastKillTime + config->aimbot[weaponIndex].killDelay / 1000.0f > now)
-		return;
+	auto now = memory->globalVars->realTime;
 	
     if ((cmd->buttons & UserCmd::Button_Attack || cfg.autoShoot || cfg.aimlock) && activeWeapon->getInaccuracy() <= config->aimbot[weaponIndex].maxAimInaccuracy) {
 
@@ -516,6 +513,10 @@ void Aimbot::run(UserCmd *cmd) noexcept
 
 		if (target && targetAngle.notNull())
 		{
+
+			if (lastKillTime + cfg.killDelay / 1000.0f > now)
+				return;
+
 			if (now - lastTime <= static_cast<float>(cfg.firstShotDelay) / 1000.f)
 				return;
 
