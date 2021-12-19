@@ -109,7 +109,7 @@ void Misc::updateClanTag() noexcept
 
 	if (config->griefing.clocktag)
 	{
-		if (memory->globalVars->realtime - lastTime < 1.0f)
+		if (memory->globalVars->realTime - lastTime < 1.0f)
 			return;
 
 		const auto time = std::time(nullptr);
@@ -118,11 +118,11 @@ void Misc::updateClanTag() noexcept
 		s[0] = '\0';
 		sprintf_s(s, "[%02d:%02d:%02d]", localTime->tm_hour, localTime->tm_min, localTime->tm_sec);
 
-		lastTime = memory->globalVars->realtime;
+		lastTime = memory->globalVars->realTime;
 		memory->setClanTag(s, s);
 	} else if (config->griefing.customClanTag)
 	{
-		if (memory->globalVars->realtime - lastTime < 0.6f)
+		if (memory->globalVars->realTime - lastTime < 0.6f)
 			return;
 
 		if (!clanTag.empty())
@@ -152,14 +152,14 @@ void Misc::updateClanTag() noexcept
 			lastMode = config->griefing.animatedClanTag;
 		}
 
-		lastTime = memory->globalVars->realtime;
+		lastTime = memory->globalVars->realTime;
 		memory->setClanTag(clanTagBuffer.c_str(), clanTagBuffer.c_str());
 	} else
 	{
-		if (memory->globalVars->realtime - lastTime < 0.6f)
+		if (memory->globalVars->realTime - lastTime < 0.6f)
 			return;
 
-		lastTime = memory->globalVars->realtime;
+		lastTime = memory->globalVars->realTime;
 		memory->setClanTag("", "");
 	}
 }
@@ -323,13 +323,10 @@ void Misc::visualizeInaccuracy(ImDrawList *drawList) noexcept
 		if (radius > displaySize.x || radius > displaySize.y)
 			return;
 
-		const auto inaccuracy = std::sqrtf(ImLengthSqr((edge - displaySize / 2) / displaySize)) * 200;
 		const auto color = Helpers::calculateColor(config->visuals.inaccuracyCircle);
-		char text[0xF];
-		std::sprintf(text, "%.6f%%", inaccuracy);
-		drawList->AddText(edge, color, text);
 		drawList->AddCircleFilled(displaySize / 2, radius, color);
-		drawList->AddCircle(displaySize / 2, radius, color | IM_COL32_A_MASK);
+		if (config->visuals.inaccuracyCircle.outline)
+			drawList->AddCircle(displaySize / 2, radius, color | IM_COL32_A_MASK);
 	}
 }
 
@@ -576,10 +573,10 @@ bool Misc::changeName(bool reconnect, const char *newName, float delay) noexcept
 	}
 
 	static auto nextChangeTime{0.0f};
-	if (nextChangeTime <= memory->globalVars->realtime)
+	if (nextChangeTime <= memory->globalVars->realTime)
 	{
 		name->setValue(newName);
-		nextChangeTime = memory->globalVars->realtime + delay;
+		nextChangeTime = memory->globalVars->realTime + delay;
 		return true;
 	}
 	return false;
@@ -728,7 +725,7 @@ static void camDist(FrameStage stage)
 		static auto distVar = interfaces->cvar->findVar("cam_idealdist");
 		static auto curDist = 0.0f;
 		if (memory->input->isCameraInThirdPerson)
-			curDist = Helpers::approachValSmooth(static_cast<float>(config->visuals.thirdpersonDistance), curDist, memory->globalVars->frametime * 7.0f);
+			curDist = Helpers::approachValSmooth(static_cast<float>(config->visuals.thirdpersonDistance), curDist, memory->globalVars->frameTime * 7.0f);
 		else
 			curDist = 0.0f;
 
@@ -998,7 +995,7 @@ void Misc::tweakPlayerAnimations(FrameStage stage) noexcept
 			if (config->misc.fixAnimationLOD)
 			{
 				*reinterpret_cast<int *>(entity + 0xA28) = 0;
-				*reinterpret_cast<int *>(entity + 0xA30) = memory->globalVars->framecount;
+				*reinterpret_cast<int *>(entity + 0xA30) = memory->globalVars->frameCount;
 			}
 
 			if (config->misc.resolveLby)
@@ -1223,7 +1220,7 @@ void Misc::runReportbot() noexcept
 
 	static auto lastReportTime = 0.0f;
 
-	if (lastReportTime + config->griefing.reportbot.delay > memory->globalVars->realtime)
+	if (lastReportTime + config->griefing.reportbot.delay > memory->globalVars->realTime)
 		return;
 
 	if (reportbotRound >= config->griefing.reportbot.rounds)
@@ -1262,7 +1259,7 @@ void Misc::runReportbot() noexcept
 		if (!report.empty())
 		{
 			memory->submitReport(std::to_string(playerInfo.xuid).c_str(), report.c_str());
-			lastReportTime = memory->globalVars->realtime;
+			lastReportTime = memory->globalVars->realTime;
 			reportedPlayers.emplace_back(playerInfo.xuid);
 		}
 		return;
@@ -1287,14 +1284,14 @@ void Misc::preserveKillfeed(bool roundStart) noexcept
 
 	if (roundStart)
 	{
-		nextUpdate = memory->globalVars->realtime + 10.0f;
+		nextUpdate = memory->globalVars->realTime + 10.0f;
 		return;
 	}
 
-	if (nextUpdate > memory->globalVars->realtime)
+	if (nextUpdate > memory->globalVars->realTime)
 		return;
 
-	nextUpdate = memory->globalVars->realtime + 2.0f;
+	nextUpdate = memory->globalVars->realTime + 2.0f;
 
 	const auto deathNotice = memory->findHudElement(memory->hud, "CCSGO_HudDeathNotice");
 	if (!deathNotice)
@@ -1310,7 +1307,7 @@ void Misc::preserveKillfeed(bool roundStart) noexcept
 			continue;
 
 		if (child->hasClass("DeathNotice_Killer") && (!config->misc.preserveKillfeed.onlyHeadshots || child->hasClass("DeathNoticeHeadShot")))
-			child->setAttributeFloat("SpawnTime", memory->globalVars->currenttime);
+			child->setAttributeFloat("SpawnTime", memory->globalVars->currentTime);
 	}
 }
 
@@ -1517,11 +1514,11 @@ void Misc::drawBombTimer() noexcept
 	ImGui::SetNextWindowSizeConstraints({200, -1}, {FLT_MAX, -1});
 	ImGui::Begin("Bomb timer", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoNav | (gui->open ? 0 : ImGuiWindowFlags_NoInputs));
 
-	std::ostringstream ss; ss << "Bomb on " << (!plantedC4.bombsite ? 'A' : 'B') << " " << std::fixed << std::showpoint << std::setprecision(3) << (std::max)(plantedC4.blowTime - memory->globalVars->currenttime, 0.0f) << " s";
+	std::ostringstream ss; ss << "Bomb on " << (!plantedC4.bombsite ? 'A' : 'B') << " " << std::fixed << std::showpoint << std::setprecision(3) << (std::max)(plantedC4.blowTime - memory->globalVars->currentTime, 0.0f) << " s";
 
 	ImGuiCustom::textUnformattedCentered(ss.str().c_str());
 
-	ImGuiCustom::progressBarFullWidth((plantedC4.blowTime - memory->globalVars->currenttime) / plantedC4.timerLength);
+	ImGuiCustom::progressBarFullWidth((plantedC4.blowTime - memory->globalVars->currentTime) / plantedC4.timerLength);
 
 	if (plantedC4.defuserHandle != -1)
 	{
@@ -1529,17 +1526,17 @@ void Misc::drawBombTimer() noexcept
 
 		if (plantedC4.defuserHandle == GameData::local().handle)
 		{
-			std::ostringstream ss; ss << "Defusing... " << std::fixed << std::showpoint << std::setprecision(3) << (std::max)(plantedC4.defuseCountDown - memory->globalVars->currenttime, 0.0f) << " s";
+			std::ostringstream ss; ss << "Defusing... " << std::fixed << std::showpoint << std::setprecision(3) << (std::max)(plantedC4.defuseCountDown - memory->globalVars->currentTime, 0.0f) << " s";
 
 			ImGuiCustom::textUnformattedCentered(ss.str().c_str());
 		} else if (auto playerData = GameData::playerByHandle(plantedC4.defuserHandle))
 		{
-			std::ostringstream ss; ss << playerData->name << " is defusing... " << std::fixed << std::showpoint << std::setprecision(3) << (std::max)(plantedC4.defuseCountDown - memory->globalVars->currenttime, 0.0f) << " s";
+			std::ostringstream ss; ss << playerData->name << " is defusing... " << std::fixed << std::showpoint << std::setprecision(3) << (std::max)(plantedC4.defuseCountDown - memory->globalVars->currentTime, 0.0f) << " s";
 
 			ImGuiCustom::textUnformattedCentered(ss.str().c_str());
 		}
 
-		ImGuiCustom::progressBarFullWidth((plantedC4.defuseCountDown - memory->globalVars->currenttime) / plantedC4.defuseLength);
+		ImGuiCustom::progressBarFullWidth((plantedC4.defuseCountDown - memory->globalVars->currentTime) / plantedC4.defuseLength);
 
 		if (canDefuse)
 		{
@@ -1607,7 +1604,7 @@ void Misc::purchaseList(GameEvent *event) noexcept
 			totalCost = 0;
 			break;
 		case fnv::hash("round_freeze_end"):
-			freezeEnd = memory->globalVars->realtime;
+			freezeEnd = memory->globalVars->realTime;
 			break;
 		}
 	} else
@@ -1617,7 +1614,7 @@ void Misc::purchaseList(GameEvent *event) noexcept
 
 		static const auto buyTimeVar = interfaces->cvar->findVar("mp_buytime");
 
-		if ((!interfaces->engine->isInGame() || freezeEnd && memory->globalVars->realtime > freezeEnd + (!config->misc.purchaseList.onlyDuringFreezeTime ? buyTimeVar->getFloat() : 0.0f) || playerPurchases.empty() || purchaseTotal.empty()) && !gui->open)
+		if ((!interfaces->engine->isInGame() || freezeEnd && memory->globalVars->realTime > freezeEnd + (!config->misc.purchaseList.onlyDuringFreezeTime ? buyTimeVar->getFloat() : 0.0f) || playerPurchases.empty() || purchaseTotal.empty()) && !gui->open)
 			return;
 
 		ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
@@ -1979,7 +1976,7 @@ void Misc::teamDamageList(GameEvent *event)
 	static std::mutex mtx;
 	std::scoped_lock _{mtx};
 
-	static std::unordered_map<int, int> damageList;
+	static std::unordered_map<int, std::pair<unsigned, unsigned>> damageList;
 
 	if (event)
 	{
@@ -1990,8 +1987,19 @@ void Misc::teamDamageList(GameEvent *event)
 			const auto attacker = interfaces->entityList->getEntity(interfaces->engine->getPlayerFromUserID(event->getInt("attacker")));
 			const auto player = interfaces->entityList->getEntity(interfaces->engine->getPlayerFromUserID(event->getInt("userid")));
 
-			if (attacker && player && localPlayer && !localPlayer->isOtherEnemy(attacker) && !player->isOtherEnemy(attacker))
-				damageList[attacker->handle()] += event->getInt("dmg_health");
+			if (attacker && player && localPlayer && !localPlayer->isOtherEnemy(attacker) && !player->isOtherEnemy(attacker) && player->handle() != attacker->handle())
+				damageList[attacker->index()].first += event->getInt("dmg_health");
+
+			break;
+		}
+		case fnv::hash("player_death"):
+		{
+			const auto attacker = interfaces->entityList->getEntity(interfaces->engine->getPlayerFromUserID(event->getInt("attacker")));
+			const auto player = interfaces->entityList->getEntity(interfaces->engine->getPlayerFromUserID(event->getInt("userid")));
+
+			if (attacker && player && localPlayer && !localPlayer->isOtherEnemy(attacker) && !player->isOtherEnemy(attacker) && player->handle() != attacker->handle())
+				damageList[attacker->index()].second++;
+
 			break;
 		}
 		case fnv::hash("cs_match_end_restart"):
@@ -2026,9 +2034,9 @@ void Misc::teamDamageList(GameEvent *event)
 		for (const auto &[handle, damage] : damageList)
 		{
 			if (const auto player = GameData::playerByHandle(handle))
-				ImGui::Text("%s -> %idp", player->name.c_str(), damage);
+				ImGui::Text("%s -> %idp, %ikills", player->name.c_str(), damage.first, damage.second);
 			else if (GameData::local().handle == handle)
-				ImGui::TextColored({1.0f, 0.7f, 0.2f, 1.0f}, "YOU -> %idp", damage);
+				ImGui::TextColored({1.0f, 0.7f, 0.2f, 1.0f}, "YOU -> %idp, %ikills", damage.first, damage.second);
 		}
 
 		ImGui::End();
@@ -2264,7 +2272,7 @@ void Misc::watermark() noexcept
 
 	std::ostringstream watermark;
 	watermark << "NEPS > ";
-	watermark << otherOnes[static_cast<int>(memory->globalVars->realtime) % otherOnes.size()];
+	watermark << otherOnes[static_cast<int>(memory->globalVars->realTime) % otherOnes.size()];
 	ImGui::TextUnformatted(watermark.str().c_str());
 
 	static float frameRate = 1.0f;
@@ -2388,10 +2396,10 @@ void Misc::forceRelayCluster() noexcept
 
 void Misc::runChatSpammer() noexcept
 {
-	static float previousTime = memory->globalVars->realtime;
-	if (memory->globalVars->realtime < previousTime + 0.1f)
+	static float previousTime = memory->globalVars->realTime;
+	if (memory->globalVars->realTime < previousTime + 0.1f)
 		return;
-	previousTime = memory->globalVars->realtime;
+	previousTime = memory->globalVars->realTime;
 
 	constexpr auto nuke = "say \xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9";
 	constexpr auto basmala = "say \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD";

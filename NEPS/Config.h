@@ -132,13 +132,15 @@ public:
 		int rightKey = 0;
 		int backKey = 0;
 		int leftKey = 0;
+		Color4OutlineToggle visualizeDirection = {1.0f, 1.0f, 1.0f, 0.5f};
+		int desync = 0;
 		Color4Toggle visualizeDirection = {1.0f, 1.0f, 1.0f, 0.5f};
 		bool desync = false;
 		int desyncType = 5;
 		bool microMovement = false;
 		bool fakeUp = false;
 		int flipKey = 0;
-		Color4Toggle visualizeSide = {1.0f, 1.0f, 1.0f, 0.5f};
+		Color4OutlineToggle visualizeSide = {1.0f, 1.0f, 1.0f, 0.5f};
 		KeyBind choke;
 		int chokedPackets = 0;
 		bool legitAA = false;
@@ -249,7 +251,7 @@ public:
 		Color4 overlayCrosshair;
 		int overlayCrosshairType = 0;
 		Color4 recoilCrosshair;
-		Color4Toggle inaccuracyCircle = {1.0f, 1.0f, 1.0f, 0.25f};
+		Color4OutlineToggle inaccuracyCircle = {1.0f, 1.0f, 1.0f, 0.25f};
 		int recoilCrosshairType = 0;
 		int forceCrosshair = 0;
 		Color4ToggleThickness reloadProgress = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -302,7 +304,7 @@ public:
 
 		Color4ToggleThickness smokeHull = {0.5f, 0.5f, 0.5f, 0.3f};
 		Color4ToggleThickness playerBounds;
-		Color4BorderToggleThickness playerVelocity;
+		Color4OutlineToggleThickness playerVelocity;
 
 		struct ColorCorrection
 		{
@@ -412,7 +414,7 @@ public:
 			KeyBind target;
 			float trajectoryFac = 1.0f;
 			float distanceFac = 2.0f;
-			Color4BorderToggleThickness visualize = {1.0f, 0.5f, 0.0f, 1.0f};
+			Color4OutlineToggleThickness visualize = {1.0f, 0.5f, 0.0f, 1.0f};
 		} blockbot;
 
 		struct Reportbot

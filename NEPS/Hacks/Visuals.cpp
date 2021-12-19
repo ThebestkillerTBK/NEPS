@@ -367,11 +367,11 @@ void Visuals::hitEffect(GameEvent* event) noexcept
         static float lastHitTime = 0.0f;
 
         if (event && interfaces->engine->getPlayerFromUserID(event->getInt("attacker")) == localPlayer->index()) {
-            lastHitTime = memory->globalVars->realtime;
+            lastHitTime = memory->globalVars->realTime;
             return;
         }
 
-		const auto timeSinceHit = memory->globalVars->realtime - lastHitTime;
+		const auto timeSinceHit = memory->globalVars->realTime - lastHitTime;
 
 		if (timeSinceHit > config->visuals.hitEffectTime)
 			return;
@@ -410,11 +410,11 @@ void Visuals::killEffect(GameEvent *event) noexcept
 
 		if (event && interfaces->engine->getPlayerFromUserID(event->getInt("attacker")) == localPlayer->index())
 		{
-			lastKillTime = memory->globalVars->realtime;
+			lastKillTime = memory->globalVars->realTime;
 			return;
 		}
 
-		const auto timeSinceKill = memory->globalVars->realtime - lastKillTime;
+		const auto timeSinceKill = memory->globalVars->realTime - lastKillTime;
 
 		if (timeSinceKill > config->visuals.killEffectTime)
 			return;
@@ -456,11 +456,11 @@ void Visuals::hitMarker(GameEvent *event, ImDrawList *drawList) noexcept
 	if (event)
 	{
 		if (localPlayer && event->getInt("attacker") == localPlayer->getUserId())
-			lastHitTime = memory->globalVars->realtime;
+			lastHitTime = memory->globalVars->realTime;
 		return;
 	}
 
-	const auto timeSinceHit = memory->globalVars->realtime - lastHitTime;
+	const auto timeSinceHit = memory->globalVars->realTime - lastHitTime;
 
 	if (timeSinceHit > config->visuals.hitMarkerTime)
 		return;
@@ -720,7 +720,7 @@ void Visuals::bulletBeams(GameEvent *event)
 	if (const auto beam = memory->viewRenderBeams->createBeamPoints(info))
 	{
 		beam->flags &= ~FBEAM_FOREVER;
-		beam->die = memory->globalVars->currenttime + cfg->life;
+		beam->die = memory->globalVars->currentTime + cfg->life;
 	}
 }
 

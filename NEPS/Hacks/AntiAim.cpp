@@ -120,6 +120,7 @@ void AntiAim::run(UserCmd* cmd, const Vector& currentViewAngles, bool& sendPacke
 	if (cfg.legitAA)
 		AntiAim::legit(cmd, currentViewAngles, sendPacket);
 
+	bool fakeDucking = false;
 	if (static Helpers::KeyBindState flag; config->exploits.fakeDuckPackets && flag[config->exploits.fakeDuck])
 	{
 		sendPacket = networkChannel->chokedPackets >= config->exploits.fakeDuckPackets;
@@ -132,17 +133,20 @@ void AntiAim::run(UserCmd* cmd, const Vector& currentViewAngles, bool& sendPacke
 
 		if (networkChannel->chokedPackets > (config->exploits.fakeDuckPackets / 2))
 			cmd->buttons |= UserCmd::Button_Duck;
+
+		fakeDucking = true;
 	}
-	else if (static Helpers::KeyBindState flag; flag[cfg.choke] && cfg.chokedPackets)
+	
+	if (Helpers::attacking(cmd->buttons & UserCmd::Button_Attack, cmd->buttons & UserCmd::Button_Attack2))
+		return;
+
+	if (static Helpers::KeyBindState flag; flag[cfg.choke] && cfg.chokedPackets && !fakeDucking)
 	{
 		if (interfaces->engine->isVoiceRecording())
 			sendPacket = networkChannel->chokedPackets >= std::min(3, cfg.chokedPackets);
 		else
 			sendPacket = networkChannel->chokedPackets >= cfg.chokedPackets;
 	}
-
-	if (Helpers::attacking(cmd->buttons & UserCmd::Button_Attack, cmd->buttons & UserCmd::Button_Attack2))
-		return;
 
 	if (cfg.pitch && cmd->viewangles.x == currentViewAngles.x)
 		cmd->viewangles.x = cfg.pitchAngle;
@@ -257,33 +261,30 @@ void AntiAim::run(UserCmd* cmd, const Vector& currentViewAngles, bool& sendPacke
 		float rightDesyncAngle = cfg.rightLimit * 2.f;
 		float a = 0.0f;
 		float b = 0.0f;
-
-		switch (cfg.desyncType)
+		switch (cfg.desync)
 		{
-		case 0:
-			b = flip ? leftDesyncAngle : -rightDesyncAngle;
-			break;
 		case 1:
-			a = flip ? -leftDesyncAngle : rightDesyncAngle;
-			b = flip ? leftDesyncAngle : -rightDesyncAngle;
+			b = flip ? 120.0f : -120.0f;
 			break;
 		case 2:
-			a = flip ? -leftDesyncAngle : rightDesyncAngle;
-			b = flip ? leftDesyncAngle / 2.f : -rightDesyncAngle / 2.f;
+			a = flip ? -120.0f : 120.0f;
+			b = flip ? 120.0f : -120.0f;
 			break;
 		case 3:
-		case 4:
-			a = flip ? leftDesyncAngle : -rightDesyncAngle;
-			b = flip ? leftDesyncAngle : -rightDesyncAngle;
+			a = flip ? -120.0f : 120.0f;
+			b = flip ? 60.0f : -60.0f;
 			break;
+		case 4:
 		case 5:
+			a = flip ? 120.0f : -120.0f;
+			b = flip ? 120.0f : -120.0f;
 			break;
 		}
 
-		if (cfg.flipKey && GetAsyncKeyState(cfg.flipKey) & 1 || cfg.desyncType == 4 && lbyUpdate)
+		if (cfg.flipKey && GetAsyncKeyState(cfg.flipKey) & 1 || cfg.desync == 4 && lbyUpdate)
 			flip = !flip;
 
-		if (cfg.desyncType == 0)
+		if (cfg.desync == 0)
 		{
 			microMovement(cmd);
 
@@ -443,13 +444,13 @@ void AntiAim::visualize(ImDrawList *drawList) noexcept
 		switch (dir)
 		{
 		case -1:
-			ImGuiCustom::drawTriangleFromCenter(drawList, {-200, 0}, color);
+			ImGuiCustom::drawTriangleFromCenter(drawList, {-200, 0}, color, cfg.visualizeDirection.outline);
 			break;
 		case 0:
-			ImGuiCustom::drawTriangleFromCenter(drawList, {0, 100}, color);
+			ImGuiCustom::drawTriangleFromCenter(drawList, {0, 100}, color, cfg.visualizeDirection.outline);
 			break;
 		case 1:
-			ImGuiCustom::drawTriangleFromCenter(drawList, {200, 0}, color);
+			ImGuiCustom::drawTriangleFromCenter(drawList, {200, 0}, color, cfg.visualizeDirection.outline);
 			break;
 		}
 	}
@@ -458,8 +459,8 @@ void AntiAim::visualize(ImDrawList *drawList) noexcept
 	{
 		const auto color = Helpers::calculateColor(cfg.visualizeSide);
 		if (flip)
-			ImGuiCustom::drawTriangleFromCenter(drawList, {100, 0}, color);
+			ImGuiCustom::drawTriangleFromCenter(drawList, {100, 0}, color, cfg.visualizeSide.outline);
 		else
-			ImGuiCustom::drawTriangleFromCenter(drawList, {-100, 0}, color);
+			ImGuiCustom::drawTriangleFromCenter(drawList, {-100, 0}, color, cfg.visualizeSide.outline);
 	}
 }

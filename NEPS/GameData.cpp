@@ -36,10 +36,10 @@ static auto playerByHandleWritable(int handle) noexcept
 void GameData::update() noexcept
 {
 	static int lastFrame;
-	if (lastFrame == memory->globalVars->framecount)
+	if (lastFrame == memory->globalVars->frameCount)
 		return;
 
-	lastFrame = memory->globalVars->framecount;
+	lastFrame = memory->globalVars->frameCount;
 
 	Lock lock;
 
@@ -178,10 +178,11 @@ void GameData::update() noexcept
 			projectile.exploded = true;
 		});
 
-	std::erase_if(projectileData, [](const auto& projectile) { return interfaces->entityList->getEntityFromHandle(projectile.handle) == nullptr
-		&& (projectile.trajectory.size() < 1 || projectile.trajectory[projectile.trajectory.size() - 1].first + 60.0f < memory->globalVars->realtime); });
-
-	std::erase_if(playerData, [](const auto& player) { return interfaces->entityList->getEntityFromHandle(player.handle) == nullptr && player.fadingAlpha() < std::numeric_limits<float>::epsilon(); });
+	std::erase_if(projectileData, [](const auto &projectile)
+	{
+		return interfaces->entityList->getEntityFromHandle(projectile.handle) == nullptr
+			&& (projectile.trajectory.size() < 1 || projectile.trajectory[projectile.trajectory.size() - 1].first + 60.0f < memory->globalVars->realTime);
+	});
 
 }
 
@@ -413,7 +414,7 @@ void ProjectileData::update(Entity* projectile) noexcept
 {
 	static_cast<BaseData&>(*this) = { projectile };
 
-	if (const auto& pos = projectile->getAbsOrigin(); trajectory.size() < 1 || trajectory[trajectory.size() - 1].second != pos)
+	if (const auto &pos = projectile->getAbsOrigin(); trajectory.size() < 1 || trajectory[trajectory.size() - 1].second != pos)
 		trajectory.emplace_back(memory->globalVars->realtime, pos);
 }
 
@@ -426,7 +427,7 @@ void PlayerData::update(Entity *entity) noexcept
 	if (entity->isDormant())
 	{
 		if (!dormant)
-			becameDormant = memory->globalVars->realtime;
+			becameDormant = memory->globalVars->realTime;
 
 		dormant = true;
 		return;

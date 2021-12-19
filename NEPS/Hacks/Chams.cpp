@@ -148,15 +148,17 @@ void Chams::renderPlayer(Entity* player) noexcept
 			Animations::getDesyncedBones(fakeBones);
 			const auto &origin = localPlayer->getRenderOrigin();
 
-			for (int i = 0; i < MAX_STUDIO_BONES; i++)
-				fakeBones[i].setOrigin(fakeBones[i].origin() + origin);
+			for (auto &m : fakeBones)
+				m.setOrigin(m.origin() + origin);
 
 			applyChams(config->chams["Desync"].materials, health, fakeBones);
 			interfaces->studioRender->forcedMaterialOverride(nullptr);
 		}
 
-		if (appliedChams) hooks->modelRender.callOriginal<void, 21>(ctx, state, info, customBoneToWorld);
+		appliedChams = false;
+
 		applyChams(config->chams["Local player"].materials, health);
+		if (!appliedChams) hooks->modelRender.callOriginal<void, 21>(ctx, state, info, customBoneToWorld);
     } else if (localPlayer->isOtherEnemy(player))
 	{
 		if (config->backtrack.enabled)
@@ -182,8 +184,10 @@ void Chams::renderPlayer(Entity* player) noexcept
 			}
 		}
 
-		if (appliedChams) hooks->modelRender.callOriginal<void, 21>(ctx, state, info, customBoneToWorld);
+		appliedChams = false;
+
         applyChams(config->chams["Enemies"].materials, health);
+		if (!appliedChams) hooks->modelRender.callOriginal<void, 21>(ctx, state, info, customBoneToWorld);
     } else {
         applyChams(config->chams["Allies"].materials, health);
     }
@@ -294,7 +298,7 @@ void Chams::applyChams(const std::array<Config::Chams::Material, 7>& chams, int 
 		else
 			material->colorModulate(r, g, b);
 
-		const auto pulse = cham.color[3] * (cham.blinking ? std::sin(memory->globalVars->realtime * 5) * 0.5f + 0.5f : 1.0f);
+		const auto pulse = cham.color[3] * (cham.blinking ? std::sin(memory->globalVars->realTime * 5) * 0.5f + 0.5f : 1.0f);
 		const auto invpulse = 1.0f - pulse;
 
 		if (material == glow)
@@ -352,7 +356,7 @@ void Chams::applyChams(const std::array<Config::Chams::Material, 7>& chams, int 
 		else
 			material->colorModulate(r, g, b);
 
-		const auto pulse = cham.color[3] * (cham.blinking ? std::sin(memory->globalVars->realtime * 5) * 0.5f + 0.5f : 1.0f);
+		const auto pulse = cham.color[3] * (cham.blinking ? std::sin(memory->globalVars->realTime * 5) * 0.5f + 0.5f : 1.0f);
 		const auto invpulse = 1.0f - pulse;
 
 		if (material == glow)

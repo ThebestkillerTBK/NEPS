@@ -171,10 +171,10 @@ static void read(const json &j, const char *key, std::unordered_map<std::string,
 	}
 }
 
-static void from_json(const json &j, KeyBind &c)
+static void from_json(const json &j, KeyBind &k)
 {
-	read(j, "Key", c.key);
-	read(j, "Key mode", c.keyMode);
+	read(j, "Key", k.key);
+	read(j, "Key mode", k.keyMode);
 }
 
 static void from_json(const json &j, Color4 &c)
@@ -184,22 +184,22 @@ static void from_json(const json &j, Color4 &c)
 	read(j, "Rainbow Speed", c.rainbowSpeed);
 }
 
-static void from_json(const json &j, Color4Border &cb)
+static void from_json(const json &j, Color4Outline &co)
 {
-	from_json(j, static_cast<Color4 &>(cb));
-	read(j, "Border", cb.border);
+	from_json(j, static_cast<Color4 &>(co));
+	read(j, "Border", co.outline);
 }
 
-static void from_json(const json &j, Color4BorderToggle &cbt)
+static void from_json(const json &j, Color4OutlineToggle &cot)
 {
-	from_json(j, static_cast<Color4Border &>(cbt));
-	read(j, "Enabled", cbt.enabled);
+	from_json(j, static_cast<Color4Outline &>(cot));
+	read(j, "Enabled", cot.enabled);
 }
 
-static void from_json(const json &j, Color4BorderToggleThickness &cbt)
+static void from_json(const json &j, Color4OutlineToggleThickness &cott)
 {
-	from_json(j, static_cast<Color4BorderToggle &>(cbt));
-	read(j, "Thickness", cbt.thickness);
+	from_json(j, static_cast<Color4OutlineToggle &>(cott));
+	read(j, "Thickness", cott.thickness);
 }
 
 static void from_json(const json &j, Color4Toggle &ct)
@@ -294,7 +294,7 @@ static void from_json(const json &j, Weapon &w)
 
 static void from_json(const json &j, Trail &t)
 {
-	from_json(j, static_cast<Color4BorderToggleThickness &>(t));
+	from_json(j, static_cast<Color4OutlineToggleThickness &>(t));
 
 	read(j, "Type", t.type);
 	read(j, "Time", t.time);
@@ -437,7 +437,6 @@ static void from_json(const json &j, Config::AntiAim &a)
 	read(j, "Left key", a.leftKey);
 	read<value_t::object>(j, "Visualize direction", a.visualizeDirection);
 	read(j, "Desync", a.desync);
-	read(j, "Desync type", a.desyncType);
 	read(j, "Fake up", a.fakeUp);
 	read(j, "Flip key", a.flipKey);
 	read<value_t::object>(j, "Visualize side", a.visualizeSide);
@@ -961,21 +960,21 @@ static void to_json(json &j, const Color4 &o, const Color4 &dummy = {})
 	WRITE("Rainbow Speed", rainbowSpeed);
 }
 
-static void to_json(json &j, const Color4Border &o, const Color4Border &dummy = {})
+static void to_json(json &j, const Color4Outline &o, const Color4Outline &dummy = {})
 {
 	to_json(j, static_cast<const Color4 &>(o), dummy);
-	WRITE("Border", border);
+	WRITE("Border", outline);
 }
 
-static void to_json(json &j, const Color4BorderToggle &o, const Color4BorderToggle &dummy = {})
+static void to_json(json &j, const Color4OutlineToggle &o, const Color4OutlineToggle &dummy = {})
 {
-	to_json(j, static_cast<const Color4Border &>(o), dummy);
+	to_json(j, static_cast<const Color4Outline &>(o), dummy);
 	WRITE("Enabled", enabled);
 }
 
-static void to_json(json &j, const Color4BorderToggleThickness &o, const Color4BorderToggleThickness &dummy = {})
+static void to_json(json &j, const Color4OutlineToggleThickness &o, const Color4OutlineToggleThickness &dummy = {})
 {
-	to_json(j, static_cast<const Color4BorderToggle &>(o), dummy);
+	to_json(j, static_cast<const Color4OutlineToggle &>(o), dummy);
 	WRITE("Thickness", thickness);
 }
 
@@ -1082,7 +1081,7 @@ static void to_json(json &j, const Weapon &o, const Weapon &dummy = {})
 
 static void to_json(json &j, const Trail &o, const Trail &dummy = {})
 {
-	to_json(j, static_cast<const Color4BorderToggleThickness &>(o), dummy);
+	to_json(j, static_cast<const Color4OutlineToggleThickness &>(o), dummy);
 	WRITE("Type", type);
 	WRITE("Time", time);
 }
@@ -1202,7 +1201,6 @@ static void to_json(json &j, const Config::AntiAim &o, const Config::AntiAim &du
 	WRITE("Left key", leftKey);
 	WRITE("Visualize direction", visualizeDirection);
 	WRITE("Desync", desync);
-	WRITE("Desync type", desyncType);
 	WRITE("Fake up", fakeUp);
 	WRITE("Flip key", flipKey);
 	WRITE("Visualize side", visualizeSide);

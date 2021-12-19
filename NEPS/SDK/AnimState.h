@@ -68,9 +68,9 @@ struct AnimLayer
 
 struct AnimState
 {
-	PAD(4);
-	bool firstRunSinceInit;
-	PAD(91); //5
+	void update(Vector viewangles) noexcept { memory->updateState(this, nullptr, viewangles.z, viewangles.y, viewangles.x, nullptr); }
+
+	PAD(95)
 	Entity *entity;
 	Entity *activeWeapon;
 	Entity *lastActiveWeapon;

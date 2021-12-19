@@ -811,6 +811,7 @@ void GUI::renderAimbotWindow(bool contentOnly) noexcept
 			ImGui::SliderFloat("##acceleration", &config->aimbot[currentWeapon].acceleration, 0.0f, 5.0f, "Acceleration %.4fdeg/tick^2", ImGuiSliderFlags_Logarithmic);
 			ImGui::SliderFloat("##friction", &config->aimbot[currentWeapon].friction, 1.0f, 5.0f, "Friction %.4f", ImGuiSliderFlags_Logarithmic);
 			config->aimbot[currentWeapon].friction = std::fmaxf(1.0f, config->aimbot[currentWeapon].friction);
+			ImGui::EndPopup();
 		}
 
 		ImGui::SliderFloat("#rcsH", &config->aimbot[currentWeapon].recoilReductionH, 0.0f, 100.0f, "RCS horizontal %.1f%%");
@@ -899,7 +900,7 @@ void GUI::renderAntiAimWindow(bool contentOnly) noexcept
 			ImGui::EndPopup();
 		}
 
-		ImGui::Checkbox("Desync", &currentConfig.desync);
+		ImGui::Combo("Desync", &currentConfig.desync, "None\0Micro movement\0Opposite\0Interchanged\0Fake desync\0Sway\0");
 		ImGui::SameLine();
 		if (ImGui::ArrowButton("desync_advanced", ImGuiDir_Right))
 			ImGui::OpenPopup("##desync");
@@ -2034,9 +2035,7 @@ void GUI::renderVisualsWindow(bool contentOnly) noexcept
 	}
 
 	ImGui::SliderInt("##fov", &config->visuals.fov, 1, 170, "FOV %ddeg");
-	ImGui::Checkbox("Keep FOV", &config->visuals.forceFov);
-	if (ImGui::IsItemHovered())
-		ImGui::SetTooltip("Keep FOV when scoped");
+	ImGui::Checkbox("Keep FOV when scoped", &config->visuals.forceFov);
 	ImGui::SliderInt("##far_z", &config->visuals.farZ, 0, 2500, "Far Z %d");
 	ImGui::SliderInt("##flash_red", &config->visuals.flashReduction, 0, 100, "Flash reduction %d%%");
 	ImGui::SliderFloat("##brightness", &config->visuals.brightness, 0.0f, 1.0f, "Brightness %.2f");
@@ -3033,7 +3032,7 @@ void GUI::renderDebugWindow() noexcept
 				dlight->outerAngle = 0.0f;
 				dlight->flags = 0;
 				dlight->decay = 0.0f;
-				dlight->die = memory->globalVars->currenttime + life;
+				dlight->die = memory->globalVars->currentTime + life;
 				dlight->origin = entity->getAbsOrigin();
 				dlight->radius = radius;
 				dlight->color.r = static_cast<unsigned char>(lightColor[0] * 255);
@@ -3175,7 +3174,7 @@ void GUI::renderDebugWindow() noexcept
 	{
 		if (localPlayer)
 		{
-			const auto layers = localPlayer->animationLayers();
+			const auto layers = localPlayer->animLayers();
 
 			if (ImGui::BeginTable("shrek2", 5))
 			{
@@ -3186,7 +3185,7 @@ void GUI::renderDebugWindow() noexcept
 				ImGui::TableSetupColumn("Cycle");
 				ImGui::TableHeadersRow();
 
-				for (int i = 0; i < localPlayer->getAnimationLayerCount(); ++i)
+				for (int i = 0; i < localPlayer->getAnimLayerCount(); ++i)
 				{
 					ImGui::TableNextRow();
 					ImGui::PushID(ImGui::TableGetRowIndex());
