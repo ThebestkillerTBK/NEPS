@@ -97,13 +97,33 @@
 
 struct Ray
 {
-	Ray(const Vector &src, const Vector &dest) : start(src), delta(dest - src) { isSwept = delta.x || delta.y || delta.z; }
-	Vector start;
-	INIT_PAD(4)
-	Vector delta;
-	INIT_PAD(40)
-	bool isRay = true;
-	bool isSwept;
+	Ray(const Vector& src, const Vector& dest)
+		: start(src), delta(dest - src), extents(Vector{ }), startOffset(Vector{ }), worldAxisTransform(NULL), isRay(true) {
+		isSwept = delta.x || delta.y || delta.z;
+	}
+
+	Ray(const Vector& src, const Vector& dest, const Vector& mins, const Vector& maxs)
+		: delta(dest - src), extents(maxs - mins), startOffset(maxs + mins), worldAxisTransform(NULL)
+	{
+		isSwept = delta.x || delta.y || delta.z;
+		extents *= 0.5f;
+		isRay = (extents.lengthSquared() < 1e-6);
+
+		startOffset *= 0.5f;
+		start = src + startOffset;
+		startOffset *= -1.0f;
+	}
+	Vector start{ };
+	float pad{ };
+	Vector delta{ };
+	float pad1{ };
+	Vector startOffset{ };
+	float pad2{ };
+	Vector extents{ };
+	float pad3{ };
+	const Matrix3x4* worldAxisTransform;
+	bool isRay{ };
+	bool isSwept{ };
 };
 
 class Entity;

@@ -11,6 +11,7 @@
 #include "../SDK/Entity.h"
 #include "../SDK/EntityList.h"
 #include "../SDK/FrameStage.h"
+#include "../SDK/Filesystem.h"
 #include "../SDK/GameEvent.h"
 #include "../SDK/ItemSchema.h"
 #include "../SDK/Localize.h"
@@ -18,6 +19,8 @@
 #include "../SDK/WeaponId.h"
 
 #include "../lib/Helpers.hpp"
+
+#include <shared_lib/stb/image.h>
 
 /* This file is part of nSkinz by namazso, licensed under the MIT license:
 *

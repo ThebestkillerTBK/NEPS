@@ -17,6 +17,7 @@
 #include "Hacks/Backtrack.h"
 #include "Hacks/Chams.h"
 #include "Hacks/EnginePrediction.h"
+#include "Hacks/GrenadePrediction.h"
 #include "Hacks/StreamProofESP.h"
 #include "Hacks/Glow.h"
 #include "Hacks/KnifeBot.h"
@@ -104,6 +105,7 @@ static HRESULT __stdcall present(IDirect3DDevice9 *device, const RECT *src, cons
 
 	Misc::soundESP();
 	StreamProofESP::render();
+	NadePrediction::draw();
 
 	AntiAim::visualize(ImGui::GetBackgroundDrawList());
 	Visuals::hitMarker(nullptr, ImGui::GetBackgroundDrawList());
@@ -201,6 +203,7 @@ static bool __stdcall createMove(float inputSampleTime, UserCmd *cmd) noexcept
 	if (static Helpers::KeyBindState flag; flag[config->exploits.slowwalk]) Misc::slowwalk(cmd);
 
 	EnginePrediction::run(cmd);
+	NadePrediction::run(cmd);
 
 	Aimbot::run(cmd);
 	Backtrack::run(cmd);

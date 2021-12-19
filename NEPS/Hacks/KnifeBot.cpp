@@ -7,113 +7,225 @@
 #include "../SDK/Entity.h"
 #include "../SDK/EngineTrace.h"
 
-
-bool IsPlayerBehind(Entity* player) noexcept
-{
-	Vector pOrigin = player->getAbsOrigin();
-	Vector toTarget = (localPlayer->getAbsOrigin() - pOrigin);
-	Vector playerViewAngles;
-	Vector::AngleVectors(player->eyeAngles(), playerViewAngles);
-	if (toTarget.dotProduct(playerViewAngles) > -0.5f)
-		return false;
-	else
-		return true;
+static auto timeToTicks(float time) noexcept
+{ 
+    return static_cast<int>(0.5f + time / memory->globalVars->intervalPerTick); 
 }
 
-int GetKnifeDamageDone(Entity* player) noexcept
+void knifeBotRage(UserCmd* cmd) noexcept
 {
-	//damage: unarmored/armored
-	//leftclick: 39/33
-	//rightclick: 55/65
-	//backstab leftclick: 90/76
-	//backstab rightclick: 180/153
-	bool backstab = IsPlayerBehind(player);
-	int armor = player->armor();
-	if (!backstab)
-	{
-		if (armor > 0)
-			return 33; // 21
-		else
-			return 39; // 25
-	}
-	else
-	{
-		if (armor > 0)
-			return 76; // 76
-		else
-			return 90; // 90
-	}
+    if (static Helpers::KeyBindState flag; !flag[config->misc.knifeBot.enabled])
+        return;
+
+    if (!localPlayer || !localPlayer->isAlive())
+        return;
+
+    const auto activeWeapon = localPlayer->getActiveWeapon();
+    if (!activeWeapon || !activeWeapon->isKnife())
+        return;
+
+    const auto weaponData = activeWeapon->getWeaponData();
+    if (!weaponData)
+        return;
+
+    if (activeWeapon->nextPrimaryAttack() > memory->globalVars->serverTime() && activeWeapon->nextSecondaryAttack() > memory->globalVars->serverTime())
+        return;
+
+    const auto localPlayerOrigin = localPlayer->origin();
+    const auto localPlayerEyePosition = localPlayer->getEyePosition();
+    const auto aimPunch = localPlayer->getAimPunch();
+
+    auto bestDistance{ FLT_MAX };
+    Entity* bestTarget{ };
+    float bestSimulationTime = 0;
+    Vector absAngle{ };
+    Vector origin{ };
+    Vector bestTargetPosition{ };
+
+    for (int i = 1; i <= interfaces->engine->getMaxClients(); i++)
+    {
+        auto entity = interfaces->entityList->getEntity(i);
+        if (!entity || entity == localPlayer.get() || entity->isDormant() || !entity->isAlive()
+            || (!entity->isOtherEnemy(localPlayer.get()) && !config->misc.knifeBot.friendly) || entity->gunGameImmunity())
+            continue;
+
+        std::array<Matrix3x4, MAX_STUDIO_BONES> bones;
+        {
+            const auto& boneMatrices = entity->boneCache();
+            std::copy(boneMatrices.memory, boneMatrices.memory + boneMatrices.size, bones.begin());
+        }
+
+        auto distance{ localPlayerOrigin.distTo(entity->origin()) };
+
+        if (distance < bestDistance) {
+            bestDistance = distance;
+            bestTarget = entity;
+            absAngle = entity->getAbsAngle();
+            origin = entity->origin();
+            bestSimulationTime = entity->simulationTime();
+            bestTargetPosition = bones[7].origin();
+        }
+    }
+
+    if (!bestTarget || bestDistance > 75.0f)
+        return;
+
+    const auto angle{ Helpers::calculateRelativeAngle(localPlayerEyePosition, bestTarget->getBonePosition(7), cmd->viewangles + aimPunch) };
+    const bool firstSwing = (localPlayer->nextPrimaryAttack() + 0.4) < memory->globalVars->serverTime();
+
+    bool backStab = false;
+
+    Vector targetForward = Vector::fromAngle(absAngle);
+    targetForward.z = 0;
+
+    Vector vecLOS = (origin - localPlayer->origin());
+    vecLOS.z = 0;
+    vecLOS.normalize();
+
+    float dot = vecLOS.dotProduct(targetForward);
+
+    if (dot > 0.475f)
+        backStab = true;
+
+    auto hp = bestTarget->health();
+    auto armor = bestTarget->armor() > 1;
+
+    int minDmgSol = 40;
+    int minDmgSag = 65;
+
+    if (backStab)
+    {
+        minDmgSag = 180;
+        minDmgSol = 90;
+    }
+    else if (!firstSwing)
+        minDmgSol = 25;
+
+    if (armor)
+    {
+        minDmgSag = static_cast<int>((float)minDmgSag * 0.85f);
+        minDmgSol = static_cast<int>((float)minDmgSol * 0.85f);
+    }
+
+    if (hp <= minDmgSag && bestDistance <= 60)
+        cmd->buttons |= UserCmd::Button_Attack2;
+    else if (hp <= minDmgSol)
+        cmd->buttons |= UserCmd::Button_Attack;
+    else
+        cmd->buttons |= UserCmd::Button_Attack;
+
+    cmd->viewangles += angle;
+    cmd->tickCount = timeToTicks(bestSimulationTime);
 }
 
-int GetKnife2DamageDone(Entity* player) noexcept
+void knifeTrigger(UserCmd* cmd) noexcept
 {
-	//damage: unarmored/armored
-	//leftclick: 39/33
-	//rightclick: 55/65
-	//backstab leftclick: 90/76
-	//backstab rightclick: 180/153
-	bool backstab = IsPlayerBehind(player);
-	int armor = player->armor();
-	if (!backstab)
-	{
-		if (armor > 0)
-			return 55;
-		else
-			return 65;
-	}
-	else
-	{
-		return 100;
-	}
+    if (!localPlayer || !localPlayer->isAlive())
+        return;
+
+    const auto activeWeapon = localPlayer->getActiveWeapon();
+    if (!activeWeapon || !activeWeapon->isKnife())
+        return;
+
+    const auto weaponData = activeWeapon->getWeaponData();
+    if (!weaponData)
+        return;
+
+    if (activeWeapon->nextPrimaryAttack() > memory->globalVars->serverTime() && activeWeapon->nextSecondaryAttack() > memory->globalVars->serverTime())
+        return;
+
+    Vector startPos = localPlayer->getEyePosition();
+    Vector endPos = startPos + Vector::fromAngle(cmd->viewangles) * 48.f;
+
+    bool didHitShort = false;
+
+    Trace trace;
+    interfaces->engineTrace->traceRay({ startPos, endPos }, 0x200400B, { localPlayer.get() }, trace);
+
+    if (trace.fraction >= 1.0f)
+        interfaces->engineTrace->traceRay({ startPos, endPos, Vector{ -16, -16, -18 },  Vector { 16, 16, 18 } }, 0x200400B, { localPlayer.get() }, trace);
+
+
+    endPos = startPos + Vector::fromAngle(cmd->viewangles) * 32.f;
+    Trace tr;
+    interfaces->engineTrace->traceRay({ startPos, endPos }, 0x200400B, { localPlayer.get() }, tr);
+
+    if (tr.fraction >= 1.0f)
+        interfaces->engineTrace->traceRay({ startPos, endPos, Vector{ -16, -16, -18 },  Vector { 16, 16, 18 } }, 0x200400B, { localPlayer.get() }, tr);
+
+    didHitShort = tr.fraction < 1.0f;
+
+    if (trace.fraction >= 1.0f)
+        return;
+
+    if (!trace.entity || !trace.entity->isPlayer())
+        return;
+
+    if (!trace.entity->isOtherEnemy(localPlayer.get()) && !config->misc.knifeBot.friendly)
+        return;
+
+    if (trace.entity->gunGameImmunity())
+        return;
+
+    std::array<Matrix3x4, MAX_STUDIO_BONES> bones;
+    {
+        const auto& boneMatrices = trace.entity->boneCache();
+        std::copy(boneMatrices.memory, boneMatrices.memory + boneMatrices.size, bones.begin());
+    }
+
+    const bool firstSwing = (localPlayer->nextPrimaryAttack() + 0.4) < memory->globalVars->serverTime();
+
+    bool backStab = false;
+
+    Vector targetForward = Vector::fromAngle(trace.entity->getAbsAngle());
+    targetForward.z = 0;
+
+    Vector vecLOS = (trace.entity->origin() - localPlayer->origin());
+    vecLOS.z = 0;
+    vecLOS.normalize();
+
+    float dot = vecLOS.dotProduct(targetForward);
+
+    if (dot > 0.475f)
+        backStab = true;
+
+    auto hp = trace.entity->health();
+    auto armor = trace.entity->armor() > 1;
+
+    int minDmgSol = 40;
+    int minDmgSag = 65;
+
+    if (backStab)
+    {
+        minDmgSag = 180;
+        minDmgSol = 90;
+    }
+    else if (!firstSwing)
+        minDmgSol = 25;
+
+    if (armor)
+    {
+        minDmgSag = static_cast<int>((float)minDmgSag * 0.85f);
+        minDmgSol = static_cast<int>((float)minDmgSol * 0.85f);
+    }
+
+    if (hp <= minDmgSag && didHitShort)
+        cmd->buttons |= UserCmd::Button_Attack2;
+    else if (hp <= minDmgSol)
+        cmd->buttons |= UserCmd::Button_Attack;
+    else
+        cmd->buttons |= UserCmd::Button_Attack;
+
+    cmd->tickCount = timeToTicks(trace.entity->simulationTime() );
 }
 
 void KnifeBot::run(UserCmd* cmd) noexcept
 {
-	if (!interfaces->engine->isInGame())
-		return;
+    if (static Helpers::KeyBindState flag; !flag[config->misc.knifeBot.enabled])
+        return;
 
-	if (static Helpers::KeyBindState flag; !flag[config->misc.knifeBot.enabled])
-		return;
-
-	if (!localPlayer || !localPlayer->isAlive())
-		return;
-
-	if (!localPlayer->getActiveWeapon()  || !localPlayer->getActiveWeapon()->isKnife())
-		return;
-
-	const auto startPos = localPlayer->getEyePosition();
-	const auto endPos = startPos + Vector::fromAngle(cmd->viewangles + localPlayer->getAimPunch()) * localPlayer->getActiveWeapon()->getWeaponData()->range;
-
-	Trace trace;
-	trace.startPos = localPlayer->origin();
-	TraceFilter filter = trace.entity;
-	filter.skip = localPlayer.get();
-	interfaces->engineTrace->traceRay({ startPos, endPos }, MASK_SHOT, filter, trace);
-
-	Entity* player = trace.entity;
-
-	if (!player || !player->isPlayer() || player->isDormant() || !player->isAlive())
-		return;
-
-	if (!config->misc.knifeBot.friendly && !localPlayer->isOtherEnemy(trace.entity))
-		return;
-
-	float playerDistance = localPlayer->origin().distTo(player->origin());
-	if (localPlayer->getActiveWeapon()->nextPrimaryAttack() < memory->globalVars->currenttime)
-	{
-		if (playerDistance <= 60.f && GetKnife2DamageDone(player) >= player->health())
-			cmd->buttons |= UserCmd::Button_Attack2;
-		else if (IsPlayerBehind(player) && playerDistance <= 60.f)
-			cmd->buttons |= UserCmd::Button_Attack2;
-		else if (playerDistance <= 73.f)
-		{
-			if (IsPlayerBehind(player))
-				return;
-			if (playerDistance <= 60.f &&
-				(2 * (GetKnifeDamageDone(player)) + GetKnife2DamageDone(player) - 13) < player->health())
-				cmd->buttons |= UserCmd::Button_Attack2;
-			else
-				cmd->buttons |= UserCmd::Button_Attack;
-			}
-	}
+    if (config->misc.knifeBot.aimbot)
+        knifeBotRage(cmd);
+    else
+        knifeTrigger(cmd);
 }

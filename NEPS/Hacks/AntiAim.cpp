@@ -15,10 +15,14 @@
 
 #define M_PHI 1.61803398874989484820; // golden ratio
 
+static float nextLbyUpdate;
+
 static bool canAntiAim(UserCmd *cmd) noexcept
 {
 	if (!localPlayer || !localPlayer->isAlive())
 		return false;
+
+	Helpers::lbyUpdate(localPlayer.get(), nextLbyUpdate, true);
 
 	auto weapon = localPlayer->getActiveWeapon();
 	
@@ -58,14 +62,50 @@ static void microMovement(UserCmd *cmd) noexcept
 	}
 }
 
+bool autoDirection(Vector eyeAngle) noexcept
+{
+	constexpr float maxRange{ 8192.0f };
+
+	Vector eye = eyeAngle;
+	eye.x = 0.f;
+	Vector eyeAnglesLeft45 = eye;
+	Vector eyeAnglesRight45 = eye;
+	eyeAnglesLeft45.y += 45.f;
+	eyeAnglesRight45.y -= 45.f;
+
+
+	eyeAnglesLeft45.toAngle();
+
+	Vector viewAnglesLeft45 = {};
+	viewAnglesLeft45 = viewAnglesLeft45.fromAngle(eyeAnglesLeft45) * maxRange;
+
+	Vector viewAnglesRight45 = {};
+	viewAnglesRight45 = viewAnglesRight45.fromAngle(eyeAnglesRight45) * maxRange;
+
+	static Trace traceLeft45;
+	static Trace traceRight45;
+
+	Vector startPosition{ localPlayer->getEyePosition() };
+
+	interfaces->engineTrace->traceRay({ startPosition, startPosition + viewAnglesLeft45 }, 0x4600400B, { localPlayer.get() }, traceLeft45);
+	interfaces->engineTrace->traceRay({ startPosition, startPosition + viewAnglesRight45 }, 0x4600400B, { localPlayer.get() }, traceRight45);
+
+	float distanceLeft45 = sqrtf(powf(startPosition.x - traceRight45.endPos.x, 2) + powf(startPosition.y - traceRight45.endPos.y, 2) + powf(startPosition.z - traceRight45.endPos.z, 2));
+	float distanceRight45 = sqrtf(powf(startPosition.x - traceLeft45.endPos.x, 2) + powf(startPosition.y - traceLeft45.endPos.y, 2) + powf(startPosition.z - traceLeft45.endPos.z, 2));
+
+	float mindistance = std::min(distanceLeft45, distanceRight45);
+
+	if (distanceLeft45 == mindistance)
+		return false;
+	return true;
+}
+
 static signed char dir = 0;
 static bool flip = true;
 
 void AntiAim::run(UserCmd* cmd, const Vector& currentViewAngles, bool& sendPacket) noexcept
 {
 	if (!canAntiAim(cmd)) return;
-
-
 
 	const auto networkChannel = interfaces->engine->getNetworkChannel();
 	if (!networkChannel)
@@ -190,6 +230,29 @@ void AntiAim::run(UserCmd* cmd, const Vector& currentViewAngles, bool& sendPacke
 
 	if (cfg.desync)
 	{
+		switch (cfg.peekMode)
+		{
+		case 0:
+			break;
+		case 1: // Peek real
+			if (!flip)
+				flip = !autoDirection(cmd->viewangles);
+			else
+				flip = autoDirection(cmd->viewangles);
+			break;
+		case 2: // Peek fake
+			if (flip)
+				flip = !autoDirection(cmd->viewangles);
+			else
+				flip = autoDirection(cmd->viewangles);
+			break;
+		case 3: // Jitter
+			if (sendPacket)
+				flip = !flip;
+			break;
+		default:
+			break;
+		}
 		float leftDesyncAngle = cfg.leftLimit * 2.f;
 		float rightDesyncAngle = cfg.rightLimit * 2.f;
 		float a = 0.0f;
@@ -213,6 +276,8 @@ void AntiAim::run(UserCmd* cmd, const Vector& currentViewAngles, bool& sendPacke
 			a = flip ? leftDesyncAngle : -rightDesyncAngle;
 			b = flip ? leftDesyncAngle : -rightDesyncAngle;
 			break;
+		case 5:
+			break;
 		}
 
 		if (cfg.flipKey && GetAsyncKeyState(cfg.flipKey) & 1 || cfg.desyncType == 4 && lbyUpdate)
@@ -227,6 +292,9 @@ void AntiAim::run(UserCmd* cmd, const Vector& currentViewAngles, bool& sendPacke
 		}
 		else if (lbyUpdate)
 		{
+			if (cfg.desyncType != 0 && cfg.microMovement)
+				microMovement(cmd);
+
 			sendPacket = false;
 			cmd->viewangles.y += a;
 		}
@@ -319,7 +387,6 @@ void AntiAim::legit(UserCmd* cmd, const Vector& currentViewAngles, bool& sendPac
 	if (!canAntiAim(cmd))
 		return;
 
-	static float nextLbyUpdate;
 	const bool lbyUpdate = Helpers::lbyUpdate(localPlayer.get(), nextLbyUpdate);
 	const auto& cfg = Config::AntiAim::getRelevantConfig();
 

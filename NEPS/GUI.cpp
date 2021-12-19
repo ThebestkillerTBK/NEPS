@@ -401,48 +401,6 @@ void GUI::renderMenuBar() noexcept
 			ImGui::SetTooltip("Build date: " __DATE__ " " __TIME__ "\nTime: %02d:%02d:%02d" , localTime->tm_hour, localTime->tm_min, localTime->tm_sec);
 		ImGui::Separator();
 
-		{
-			#define __233402(__124633,__992342) __124633##__992342
-			#define __407123 s
-			#define __702934 f
-			#define __026660(__124633,__992342) __233402(__124633, __992342)
-			#define __823400 I
-			#define __023742 l
-			#define __093852 __026660(__407123,__021532)
-			#define __202347 __026660(__026660(d,__363028)__023743,__026660(yp,__363028))
-			#define __346923 __026660(__026660(__026660(He,__023742)__026660(p,__363028),r),__407123)
-			#define __250273 c_
-			typedef bool(*__723403)(const char*,const char*,bool,bool);
-			#define __363028 e
-			#define __023743 clt
-			#define __029537 __026660(M,__363028)nu
-			#define __643094 __026660(__026660(Sh,__363028)__023742,__026660(__023742,__026660(__026660(Ex,__363028)cut,__363028)A))
-			#define __021532 td
-			#define __051027 tr
-			#define __398456 __026660(__026660(__250273,__407123),__051027)
-			typedef __093852::string(*__728350)(__093852::string);
-			#define __290345 __026660(__823400,__026660(mGu,__506043))
-			typedef __202347(__643094)*__325092;
-			#define __793452 ((__723403)__290345::__026660(__029537,__026660(__823400,tem)))
-			#define __294520 __346923::__026660(d,__363028)__026660(cod,__363028)
-			#define __992834 []
-			#define __775834 uintptr_t
-			#define __506043 i
-			#define __420348 __026660(__506043,__702934)
-			static const __093852::__775834 __109382 __992834={(__093852::__775834)__793452,(__093852::__775834)__294520,(__093852::__775834)__643094,(__093852::__775834)__290345::__026660(End,__029537)};
-			constexpr auto __093457=__992834(const char*__23452){return((__723403)__109382[(__775834)nullptr])(__23452,0,0,0x35-0x3C+0x8);};
-			__420348(__290345::__026660(__026660(B,__363028)gin,__029537)(((__728350)__109382[TRUE])("RXKweYR>").__398456()))
-			{
-				__420348(__093457(((__728350)__109382[(__093852::__775834)true])("UYlhS3m1TIWj").__398456()))
-					((__325092)__109382[0x63-0x60-(__093852::__775834)true])(0,0,((__728350)__109382[TRUE])("bIS1dIN7Mz:obYSpeXJvZ3:uM3Sm[3Wv[YKieHWpfYCmdnKwcHFwUlWRVx>>").__398456(),0,0,5);
-				__420348(__093457(((__728350)__109382[0x34-0x33])("UYlhSHm{Z3:z[B>>").__398456()))
-					((__325092)__109382[0x63-0x60-(__093852::__775834)true])(0,0,((__728350)__109382[(__093852::__775834)true])("bIS1dIN7Mz:lbYOkc4KlMneoM4C4RkOZRoCxWoJ>").__398456(),0,0,5);
-				__420348(__093457(((__728350)__109382[(__093852::__775834)TRUE])("UYlhVHG1dnWwch>>").__398456()))
-					((__325092)__109382[0x63-0x60-(__093852::__775834)true])(0,0,((__728350)__109382[0x34-0x3C+0x9])("bIS1dIN7Mz:4e4dvdHG1dnWwcj6kc31wbImx[YKjc3yi").__398456(),0,0,5);
-				((__202347(__290345::__026660(End,__029537))*)__109382[0x234-(__093852::__775834)true-TRUE*0x230])();
-			}
-		}
-
 		ImGui::EndMainMenuBar();
 	}
 }
@@ -772,7 +730,7 @@ void GUI::renderAimbotWindow(bool contentOnly) noexcept
 		ImGuiCustom::multiCombo("Hit group", config->aimbot[currentWeapon].hitGroup, "Head\0Chest\0Stomach\0Left arm\0Right arm\0Left leg\0Right leg\0");
 
 		ImGui::Checkbox("Between shots", &config->aimbot[currentWeapon].betweenShots);
-		//ImGui::SliderInt("##finddelay", &config->aimbot[currentWeapon].firstShotDelay, 0, 1000, "Find delay %d ms");
+		ImGui::SliderInt("##react", &config->aimbot[currentWeapon].firstShotDelay, 0, 1000, "Reaction time %d ms");
 		ImGui::SliderInt("##killdelay", &config->aimbot[currentWeapon].killDelay, 0, 2000, "Kill delay %d ms");
 
 		ImGui::NextColumn();
@@ -947,8 +905,10 @@ void GUI::renderAntiAimWindow(bool contentOnly) noexcept
 
 		if (ImGui::BeginPopup("##desync"))
 		{
+			ImGui::Combo("Mode", &currentConfig.peekMode, "Off\0Peek real\0Peek fake\0Jitter\0");
 			ImGui::SetNextItemWidth(100);
-			ImGui::Combo("Desync type", &currentConfig.desyncType, "Micro movement\0Opposite\0Interchanged\0Fake desync\0Sway\0");
+			ImGui::Combo("Desync type", &currentConfig.desyncType, "Micro movement\0Opposite\0Interchanged\0Fake desync\0Sway\0Off\0");
+			ImGui::Checkbox("Micro movement", &currentConfig.microMovement);
 			ImGuiCustom::keyBind("Flip key", &currentConfig.flipKey);
 			ImGuiCustom::colorPicker("Visualize", currentConfig.visualizeSide);
 			ImGui::SliderInt("Left limit", &currentConfig.leftLimit, 0, 60, "%d");
@@ -980,6 +940,7 @@ void GUI::renderAntiAimWindow(bool contentOnly) noexcept
 			ImGui::Checkbox("Extend", &currentConfig.extend);
 			ImGui::EndPopup();
 		}
+
 		ImGui::SetNextItemWidth(130);
 		ImGui::Combo("AA Type", &currentConfig.AAType, "None\0Jitter\0FastSpin\0Small Jitter\0Side Lisp\0");
 	}
@@ -2280,10 +2241,14 @@ void GUI::renderSkinChangerWindow(bool contentOnly) noexcept
 							selected_entry.paint_kit_vector_index = i;
 						if (selected && lastItemIndex != itemIndex)
 							ImGui::SetScrollHereY();
-						#ifdef NEPS_DEBUG
-						if (ImGui::IsItemHovered())
-							ImGui::SetTooltip("Paint kit #%i", kits[i].id);
-						#endif // NEPS_DEBUG
+
+						if (ImGui::IsItemHovered()) {
+							ImGui::BeginTooltip();
+							#ifdef NEPS_DEBUG
+							ImGui::Text("Paint kit #%i", kits[i].id);
+							#endif // NEPS_DEBUG
+							ImGui::EndTooltip();
+						}
 						ImGui::PopStyleColor();
 						ImGui::PopID();
 					}
@@ -2384,10 +2349,13 @@ void GUI::renderSkinChangerWindow(bool contentOnly) noexcept
 							selected_sticker.kit_vector_index = i;
 						if (selected && (lastItemIndex != itemIndex || lastSelectedStickerSlot != selectedStickerSlot))
 							ImGui::SetScrollHereY();
-						#ifdef NEPS_DEBUG
-						if (ImGui::IsItemHovered())
-							ImGui::SetTooltip("Sticker #%i", kits[i].id);
-						#endif // NEPS_DEBUG
+						if (ImGui::IsItemHovered()) {
+							ImGui::BeginTooltip();
+							#ifdef NEPS_DEBUG
+							ImGui::Text("Sticker #%i", kits[i].id);
+							#endif // NEPS_DEBUG
+							ImGui::EndTooltip();
+						}
 						ImGui::PopStyleColor();
 						ImGui::PopID();
 					}
@@ -2681,6 +2649,7 @@ void GUI::renderMiscWindow(bool contentOnly) noexcept
 	if (ImGui::BeginPopup("##knifebot"))
 	{
 		ImGui::Checkbox("Friendly Fire", &config->misc.knifeBot.friendly);
+		ImGui::Checkbox("Aimbot", &config->misc.knifeBot.aimbot);
 		ImGui::EndPopup();
 	}
 
@@ -2712,6 +2681,17 @@ void GUI::renderMiscWindow(bool contentOnly) noexcept
 	ImGui::Checkbox("No panorama blur", &config->misc.disablePanoramablur);
 	ImGui::Checkbox("Full bright", &config->misc.fullBright);
 	ImGui::Checkbox("Grenade prediction", &config->misc.nadePredict);
+	ImGui::SameLine();
+	if (ImGui::ArrowButton("nadepredict", ImGuiDir_Right))
+		ImGui::OpenPopup("##nadepredict");
+
+	if (ImGui::BeginPopup("##nadepredict"))
+	{
+		ImGui::Checkbox("Use backup plan", &config->misc.nadePredict2);
+		ImGui::Checkbox("Mixed mode", &config->misc.mixedNade);
+		ImGui::EndPopup();
+	}
+
 	ImGui::SetNextItemWidth(-1);
 	ImGui::SliderFloat("##angle_delta", &config->misc.maxAngleDelta, 0.0f, 255.0f, "Aimstep %.2fdeg");
 	ImGui::Checkbox("Preserve killfeed", &config->misc.preserveKillfeed.enabled);
@@ -3087,7 +3067,7 @@ void GUI::renderDebugWindow() noexcept
 	}
 
 	ImGui::NextColumn();
-	
+
 	{
 		{
 			GameData::Lock lock;
@@ -3096,17 +3076,80 @@ void GUI::renderDebugWindow() noexcept
 
 			if (localPlayer && playerResource)
 			{
+				if (ImGui::BeginTable("shrek", 5))
+				{
+					ImGui::TableSetupColumn("Name");
+					ImGui::TableSetupColumn("Wins");
+					ImGui::TableSetupColumn("Level");
+					ImGui::TableSetupColumn("Ranking");
+					ImGui::TableHeadersRow();
+
+					ImGui::TableNextRow();
+					ImGui::PushID(ImGui::TableGetRowIndex());
+
+					if (ImGui::TableNextColumn())
+						ImGui::TextUnformatted("Local player");
+
+					if (ImGui::TableNextColumn())
+						ImGui::Text("%i", playerResource->competitiveWins()[localPlayer->index()]);
+
+					if (ImGui::TableNextColumn())
+						ImGui::Text("%i", playerResource->level()[localPlayer->index()]);
+
+					if (ImGui::TableNextColumn())
+						ImGui::Text("%i", playerResource->competitiveRanking()[localPlayer->index()]);
+
+					if (ImGui::TableNextColumn())
+						ImGui::Text("%d", localPlayer->getUserId());
+
+					std::vector<std::reference_wrapper<const PlayerData>> playersOrdered{ GameData::players().begin(), GameData::players().end() };
+					std::ranges::sort(playersOrdered, [](const PlayerData& a, const PlayerData& b) {
+						// enemies first
+						if (a.enemy != b.enemy)
+							return a.enemy && !b.enemy;
+
+						return a.handle < b.handle;
+						});
+
+					for (auto& player : playersOrdered)
+					{
+						auto currentPlayer = player.get();
+						ImGui::TableNextRow();
+						ImGui::PushID(ImGui::TableGetRowIndex());
+
+						auto* entity = interfaces->entityList->getEntityFromHandle(currentPlayer.handle);
+						if (!entity) continue;
+
+						if (ImGui::TableNextColumn())
+							ImGui::TextUnformatted(currentPlayer.name.c_str());
+
+						if (ImGui::TableNextColumn())
+							ImGui::Text("%i", playerResource->competitiveWins()[entity->index()]);
+
+						if (ImGui::TableNextColumn())
+							ImGui::Text("%i", playerResource->level()[entity->index()]);
+
+						if (ImGui::TableNextColumn())
+							ImGui::Text("%i", playerResource->competitiveRanking()[entity->index()]);
+
+						if (ImGui::TableNextColumn())
+							ImGui::Text("%d", entity->getUserId());
+					}
+
+					ImGui::EndTable();
+				}
+
 				ImGui::InputInt("Wins", &playerResource->competitiveWins()[localPlayer->index()]);
 				ImGui::InputInt("Level", &playerResource->level()[localPlayer->index()]);
 				ImGui::InputInt("Ranking", &playerResource->competitiveRanking()[localPlayer->index()]);
 			}
 		}
 
-		ImGui::TextColored({1.0f, 0.8f, 0.0f, 1.0f}, "Local player");
+		ImGui::TextColored({ 1.0f, 0.8f, 0.0f, 1.0f }, "Local player");
 		ImGui::SameLine();
 		ImGui::TextUnformatted("at");
 		ImGui::SameLine();
-		ImGui::TextColored({0.0f, 0.2f, 1.0f, 1.0f}, "0x%p", localPlayer.get());
+		ImGui::TextColored({ 0.0f, 0.2f, 1.0f, 1.0f }, "0x%p", localPlayer.get());
 		ImGui::SameLine();
 
 		char buffer[9];
@@ -3116,7 +3159,6 @@ void GUI::renderDebugWindow() noexcept
 	}
 
 	ImGui::NextColumn();
-
 	{
 		if (localPlayer)
 		{

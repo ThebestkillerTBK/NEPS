@@ -7,6 +7,7 @@
 #include <shared_lib/imgui/imgui.h>
 
 #include "../SDK/WeaponId.h"
+#include "shared_lib/imgui/imgui_impl_dx9.h"
 
 enum class FrameStage;
 class Entity;
@@ -58,6 +59,10 @@ namespace SkinChanger
     const std::vector<Item>& getKnifeTypes() noexcept;
 
     void fixKnifeAnimation(Entity* viewModelWeapon, long& sequence) noexcept;
+
+    ImTextureID getItemIconTexture(const std::string& iconpath) noexcept;
+
+    void clearItemIconTextures() noexcept;
 
     struct weapon_name {
         constexpr weapon_name(WeaponId definition_index, const char* name) : definition_index(definition_index), name(name) {}

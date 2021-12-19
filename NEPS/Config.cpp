@@ -450,6 +450,8 @@ static void from_json(const json &j, Config::AntiAim &a)
 	read(j, "Right limit", a.rightLimit);
 	read(j, "Dance", a.dance);
 	read(j, "AA", a.AAType);
+	read(j, "Peek mode", a.peekMode);
+	read(j, "Micro movement", a.microMovement);
 }
 
 static void from_json(const json &j, Config::Glow &g)
@@ -756,6 +758,7 @@ static void from_json(const json &j, Config::Misc::KnifeBot &ff)
 {
 	read<value_t::object>(j, "Enabled", ff.enabled);
 	read(j, "Friendly", ff.friendly);
+	read(j, "Aimbot", ff.aimbot);
 }
 
 static void from_json(const json& j, Config::Misc::StatusBar &s)
@@ -795,6 +798,8 @@ static void from_json(const json &j, Config::Misc &m)
 	read(j, "Fix tablet signal", m.fixTabletSignal);
 	read(j, "Full bright", m.fullBright);
 	read(j, "Grenade predict", m.nadePredict);
+	read(j, "Grenade predict 2", m.nadePredict2);
+	read(j, "Mixed nade", m.mixedNade);
 	read(j, "Force relay cluster", m.forceRelayCluster);
 	read(j, "Aimstep", m.maxAngleDelta);
 	read<value_t::object>(j, "Preserve killfeed", m.preserveKillfeed);
@@ -1203,6 +1208,8 @@ static void to_json(json &j, const Config::AntiAim &o, const Config::AntiAim &du
 	WRITE("Right limit", rightLimit);
 	WRITE("Dance", dance);
 	WRITE("AA", AAType);
+	WRITE("Peek mode", peekMode);
+	WRITE("Micro movement", microMovement);
 }
 
 static void to_json(json &j, const Config::Glow &o, const Config::Glow &dummy = {})
@@ -1313,6 +1320,7 @@ static void to_json(json &j, const Config::Misc::KnifeBot&o, const Config::Misc:
 {
 	WRITE("Enabled", enabled);
 	WRITE("Friendly", friendly);
+	WRITE("Aimbot", aimbot);
 }
 
 static void to_json(json &j, const Config::Misc::BombTimer &o, const Config::Misc::BombTimer &dummy = {})
@@ -1369,6 +1377,8 @@ static void to_json(json &j, const Config::Misc &o)
 	WRITE("Fix tablet signal", fixTabletSignal);
 	WRITE("Full bright", fullBright);
 	WRITE("Grenade predict", nadePredict);
+	WRITE("Grenade predict 2", nadePredict2);
+	WRITE("Mixed nade", mixedNade);
 	WRITE("Force relay cluster", forceRelayCluster);
 	WRITE("Aimstep", maxAngleDelta);
 	WRITE("Preserve killfeed", preserveKillfeed);

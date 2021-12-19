@@ -5,6 +5,7 @@
 #include <type_traits>
 #include <Windows.h>
 
+class BaseFileSystem;
 class Client;
 class Cvar;
 class Effects;
@@ -36,6 +37,7 @@ public:
 	#define GAME_INTERFACE(type, name, module, version) \
 	type* name = reinterpret_cast<type*>(find(##module, version));
 
+	GAME_INTERFACE(BaseFileSystem, baseFileSystem, "filesystem_stdio", "VBaseFileSystem011")
 	GAME_INTERFACE(Client, client, "client", "VClient018")
 	GAME_INTERFACE(Cvar, cvar, "vstdlib", "VEngineCvar007")
 	GAME_INTERFACE(Effects, effects, "engine", "VEngineEffects001")

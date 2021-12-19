@@ -134,7 +134,8 @@ public:
 		int leftKey = 0;
 		Color4Toggle visualizeDirection = {1.0f, 1.0f, 1.0f, 0.5f};
 		bool desync = false;
-		int desyncType = 1;
+		int desyncType = 5;
+		bool microMovement = false;
 		bool fakeUp = false;
 		int flipKey = 0;
 		Color4Toggle visualizeSide = {1.0f, 1.0f, 1.0f, 0.5f};
@@ -143,12 +144,11 @@ public:
 		bool legitAA = false;
 		bool extend = false;
 		KeyBind invert;
-		bool fakeAngle = false;
-		KeyBind fakeAngleInvert;
 		int leftLimit = 60;
 		int rightLimit = 60;
 		bool dance = false;
 		int AAType = 0;
+		int peekMode = 0;
 	};
 
 	std::unordered_map<std::string, AntiAim> antiAim;
@@ -519,6 +519,7 @@ public:
 		{
 			KeyBind enabled;
 			bool friendly = false;
+			bool aimbot = false;
 		} knifeBot;
 
 		KeyBind prepareRevolver;
@@ -537,6 +538,8 @@ public:
 		bool fixTabletSignal = false;
 		bool fullBright = false;
 		bool nadePredict = false;
+		bool nadePredict2 = true;
+		bool mixedNade = false;
 		int forceRelayCluster = 0;
 		bool allCvar = false;
 	} misc;

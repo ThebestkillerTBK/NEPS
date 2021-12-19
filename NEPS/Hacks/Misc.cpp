@@ -587,7 +587,6 @@ bool Misc::changeName(bool reconnect, const char *newName, float delay) noexcept
 
 void Misc::autoJumpBug(UserCmd* cmd) noexcept
 {
-
 	if (static Helpers::KeyBindState flag; !flag[config->movement.autoJumpBug])
 		return;
 
@@ -597,12 +596,14 @@ void Misc::autoJumpBug(UserCmd* cmd) noexcept
 	if (localPlayer->moveType() == MoveType::Noclip || localPlayer->moveType() == MoveType::Ladder)
 		return;
 
-	if (localPlayer->flags() & PlayerFlag_OnGround)
+	if (!(EnginePrediction::getFlags() & PlayerFlag_OnGround) && (localPlayer->flags() & PlayerFlag_OnGround))
 	{
-		cmd->buttons &= ~UserCmd::Button_Jump;
-		if (!(EnginePrediction::getFlags() & PlayerFlag_OnGround))
-			cmd->buttons |= UserCmd::Button_Duck;
+		cmd->buttons &= ~UserCmd::Button_Bullrush;
+		cmd->buttons |= UserCmd::Button_Duck;
 	}
+
+	if (localPlayer->flags() & 1)
+		cmd->buttons &= ~UserCmd::Button_Jump;
 }
 
 void Misc::bunnyHop(UserCmd* cmd) noexcept
@@ -668,7 +669,11 @@ void Misc::changeConVarsTick() noexcept
 
 	static auto nadeVar = interfaces->cvar->findVar("cl_grenadepreview");
 	nadeVar->onChangeCallbacks.size = 0;
-	nadeVar->setValue(config->misc.nadePredict);
+
+	if (!config->misc.nadePredict2 || config->misc.mixedNade)
+		nadeVar->setValue(config->misc.nadePredict);
+	else
+		nadeVar->setValue(false);
 
 	static auto fullBright = interfaces->cvar->findVar("mat_fullbright");
 	fullBright->onChangeCallbacks.size = 0;
@@ -1748,7 +1753,7 @@ void Misc::playerList()
 	{
 		ImGui::SetNextWindowSize(ImClamp(ImVec2{}, {}, ImGui::GetIO().DisplaySize));
 		ImGui::Begin("Player List", nullptr, windowFlags);
-		if (ImGui::BeginTable("playerList", 11, ImGuiTableFlags_Borders | ImGuiTableFlags_Hideable | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Resizable))
+		if (ImGui::BeginTable("playerList", 12, ImGuiTableFlags_Borders | ImGuiTableFlags_Hideable | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Resizable))
 		{
 			ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 120.0f);
 			ImGui::TableSetupColumn("Team", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize);
@@ -1761,6 +1766,7 @@ void Misc::playerList()
 			ImGui::TableSetupColumn("Health", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize);
 			ImGui::TableSetupColumn("Armor", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize);
 			ImGui::TableSetupColumn("Last Place", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize);
+			ImGui::TableSetupColumn("Dist", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize);
 			ImGui::TableHeadersRow();
 
 			ImGui::TableNextRow();
@@ -1792,7 +1798,7 @@ void Misc::playerList()
 				if (ImGui::SameLine(); ImGui::SmallButton("Copy"))
 					ImGui::SetClipboardText(std::to_string(localPlayer->getSteamID()).c_str());
 			}
-			
+
 			if (ImGui::TableNextColumn())
 				ImGui::Text("%d", localPlayer->getUserId());
 
@@ -1812,6 +1818,9 @@ void Misc::playerList()
 
 			if (ImGui::TableNextColumn())
 				ImGui::Text("%s", localPlayer->isAlive() && localPlayer->lastPlaceName() ? interfaces->localize->findAsUTF8(localPlayer->lastPlaceName()) : "Unknown");
+
+			if (ImGui::TableNextColumn())
+				ImGui::Text("0");
 			
 			std::vector<std::reference_wrapper<const PlayerData>> playersOrdered{ GameData::players().begin(), GameData::players().end() };
 			std::ranges::sort(playersOrdered, [](const PlayerData& a, const PlayerData& b) {
@@ -1847,7 +1856,7 @@ void Misc::playerList()
 					else
 						ImGui::Text("%d", playerResource->competitiveWins()[entity->index()]);
 				}
-					
+
 				if (ImGui::TableNextColumn())
 				{
 					if (entity->isBot())
@@ -1878,7 +1887,7 @@ void Misc::playerList()
 
 				if (ImGui::TableNextColumn())
 					ImGui::Text("%d", entity->getUserId());
-				
+
 				if (ImGui::TableNextColumn())
 					ImGui::TextColored({ 0.0f, 0.5f, 0.0f, 1.0f }, "$%d", entity->account());
 
@@ -1895,8 +1904,11 @@ void Misc::playerList()
 
 				if (ImGui::TableNextColumn())
 					ImGui::Text("%s", entity->isAlive() && entity->lastPlaceName() ? interfaces->localize->findAsUTF8(entity->lastPlaceName()) : "Unknown");
-			}
 
+				if (ImGui::TableNextColumn())
+					ImGui::Text("%.1f", localPlayer->origin().distTo(entity->origin()));
+			}
+			
 			ImGui::EndTable();
 		}
 	}

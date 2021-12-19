@@ -185,6 +185,9 @@
     <ClCompile Include="lib\AntiVAC\AntiDetection.cpp">
       <Filter>lib\AntiVAC</Filter>
     </ClCompile>
+    <ClCompile Include="Hacks\GrenadePrediction.cpp">
+      <Filter>Hacks</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GUI.h">
@@ -522,6 +525,12 @@
     </ClInclude>
     <ClInclude Include="lib\AntiVAC\AntiDetection.h">
       <Filter>lib\AntiVAC</Filter>
+    </ClInclude>
+    <ClInclude Include="Hacks\GrenadePrediction.h">
+      <Filter>Hacks</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\FileSystem.h">
+      <Filter>SDK</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

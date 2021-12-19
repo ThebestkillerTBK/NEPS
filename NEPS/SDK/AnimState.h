@@ -68,7 +68,9 @@ struct AnimLayer
 
 struct AnimState
 {
-	PAD(95)
+	PAD(4);
+	bool firstRunSinceInit;
+	PAD(91); //5
 	Entity *entity;
 	Entity *activeWeapon;
 	Entity *lastActiveWeapon;
@@ -85,10 +87,10 @@ struct AnimState
 	PAD(4)
 	float feetCycle;
 	float moveWeight;
-	PAD(4)
+	float moveWeightSmoothed;
 	float duckAmount;
 	float landingDuckAdditiveAmount;
-	PAD(4)
+	float recrouchWeight;
 	Vector origin;
 	Vector previousOrigin;
 	Vector velocity;

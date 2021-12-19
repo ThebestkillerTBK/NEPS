@@ -516,8 +516,8 @@ void Aimbot::run(UserCmd *cmd) noexcept
 
 		if (target && targetAngle.notNull())
 		{
-			//if (now - lastTime < cfg.firstShotDelay / 1000.0f)
-				//return;
+			if (now - lastTime <= static_cast<float>(cfg.firstShotDelay) / 1000.f)
+				return;
 
 			static Vector lastAngles = cmd->viewangles;
 			static int lastCommand = 0;
@@ -570,6 +570,8 @@ void Aimbot::run(UserCmd *cmd) noexcept
 			
 			lastCommand = cmd->commandNumber;
 		}
+		else
+			lastTime = now;
 
 		if (!cfg.humanize) aimVelocity = Vector{};
 
