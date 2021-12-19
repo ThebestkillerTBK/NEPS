@@ -778,7 +778,7 @@ static void from_json(const json &j, Config::Misc &m)
 	read(j, "Fix mouse delta", m.fixMouseDelta);
 	read(j, "Fix animations", m.fixAnimation);
 	read(j, "Disable model occlusion", m.disableModelOcclusion);
-	read(j, "Disable interpolation", m.disableInterp);
+	read(j, "Disable extrapolation", m.noExtrapolate);
 	read(j, "Disable IK", m.disableIK);
 	read(j, "Resolve LBY", m.resolveLby);
 	read(j, "Unlock invertory", m.unlockInvertory);
@@ -1352,7 +1352,7 @@ static void to_json(json &j, const Config::Misc &o)
 	WRITE("Fix mouse delta", fixMouseDelta);
 	WRITE("Fix animations", fixAnimation);
 	WRITE("Disable model occlusion", disableModelOcclusion);
-	WRITE("Disable interpolation", disableInterp);
+	WRITE("Disable extrapolation", noExtrapolate);
 	WRITE("Disable IK", disableIK);
 	WRITE("Resolve LBY", resolveLby);
 	WRITE("Unlock invertory", unlockInvertory);

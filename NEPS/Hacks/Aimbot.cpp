@@ -158,7 +158,7 @@ static __forceinline void chooseTarget(UserCmd *cmd) noexcept
 	if (!weaponData)
 		return;
 
-	const auto aimPunch = activeWeapon->requiresRecoilControl() ? localPlayer->getAimPunch() * Vector{1.0f - cfg.recoilReductionV / 100, 1.0f - cfg.recoilReductionH / 100, 1.0f} : Vector{};
+	const auto aimPunch = activeWeapon->requiresRecoilControl() ? localPlayer->getAimPunch() * Vector{cfg.recoilReductionV / 100, cfg.recoilReductionH / 100, 1.0f} : Vector{};
 	const auto localPlayerEyePosition = localPlayer->getEyePosition();
 	bool doOverride = false;
 	{
@@ -230,6 +230,9 @@ static __forceinline void chooseTarget(UserCmd *cmd) noexcept
 				hitboxIdx == Hitbox_Neck ||
 				hitboxIdx == Hitbox_LowerChest ||
 				hitboxIdx == Hitbox_Belly)
+				continue;
+
+			if (~hitGroup & (1 << (Helpers::hitboxToHitGroup(hitboxIdx) - 1)))
 				continue;
 
 			const auto hitbox = *hitboxSet->getHitbox(hitboxIdx);
@@ -371,9 +374,6 @@ static __forceinline void chooseTarget(UserCmd *cmd) noexcept
 				const auto damage = Helpers::findDamage(point, localPlayer.get(), trace, cfg.friendlyFire, backtrackRecord, hitboxIdx);
 				bool goesThroughWall = trace.startPos != localPlayerEyePosition;
 
-				if (~hitGroup & (1 << (trace.hitGroup - 1)))
-					continue;
-
 				if (cfg.visibleOnly && goesThroughWall) continue;
 
 				if (!backtrackRecord && trace.entity != entity) continue;
@@ -507,16 +507,6 @@ void Aimbot::run(UserCmd *cmd) noexcept
 			resetMissCounter();
 
 		chooseTarget(cmd);
-
-		const auto aimPunch = activeWeapon->requiresRecoilControl() ? localPlayer->getAimPunch() * Vector { cfg.recoilReductionV / 100, cfg.recoilReductionH / 100, 1.0f } : Vector{};
-		static Vector previousAimPunch = aimPunch;
-		if (aimPunch.notNull() && (cfg.recoilReductionH || cfg.recoilReductionV))
-		{
-			cmd->viewangles -= cfg.silent ? aimPunch : aimPunch - previousAimPunch;
-			if (!cfg.silent)
-				interfaces->engine->setViewAngles(cmd->viewangles);
-		}
-		previousAimPunch = aimPunch;
 
 		static Vector aimVelocity = Vector{};
 

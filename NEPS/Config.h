@@ -82,8 +82,8 @@ public:
 			float hitchance = 0.0f;
 			int hitGroup = 127;
 		} aimbotOverride;
-		float recoilReductionH = 0.0f;
-		float recoilReductionV = 0.0f;
+		float recoilReductionH = 100.0f;
+		float recoilReductionV = 100.0f;
 	};
 	std::array<Aimbot, 40> aimbot;
 
@@ -452,7 +452,7 @@ public:
 		bool fixAnimation = true;
 		bool fixMouseDelta = true;
 		bool disableModelOcclusion = true;
-		bool disableInterp = false;
+		bool noExtrapolate = true;
 		bool disableIK = false;
 		bool resolveLby = false;
 		bool unlockInvertory = false;

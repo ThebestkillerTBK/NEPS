@@ -39,6 +39,8 @@ namespace Helpers
 	constexpr auto degreesToRadians = [](float degrees) constexpr noexcept { return degrees * PI / 180.0f; };
 	constexpr auto radiansToDegrees = [](float radians) constexpr noexcept { return radians * 180.0f / PI; };
 
+	constexpr int hitboxToHitGroup(int hitbox) noexcept;
+
 	constexpr auto equals = [](float first, float second, float epsilon) noexcept
 	{
 		epsilon = std::fabsf(epsilon);

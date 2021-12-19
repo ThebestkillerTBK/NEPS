@@ -681,8 +681,7 @@ void Misc::changeConVarsTick() noexcept
 	lerpVar->setValue(true);
 
 	static auto exrpVar = interfaces->cvar->findVar("cl_extrapolate");
-	exrpVar->setValue(false);
-
+	exrpVar->setValue(!config->misc.noExtrapolate);
 	static auto ragdollGravity = interfaces->cvar->findVar("cl_ragdoll_gravity");
 	ragdollGravity->setValue(config->visuals.inverseRagdollGravity ? -600 : 600);
 }
@@ -981,11 +980,10 @@ void Misc::fixMouseDelta(UserCmd* cmd) noexcept
 
 void Misc::tweakPlayerAnimations(FrameStage stage) noexcept
 {
-	if (stage == FrameStage::RenderStart)
-	{
-		if (!config->misc.fixAnimationLOD && !config->misc.disableInterp && !config->misc.resolveLby)
-			return;
+	if (!config->misc.fixAnimationLOD && !config->misc.resolveLby)
+		return;
 
+	if (stage == FrameStage::RenderStart)
 		for (int i = 1; i <= interfaces->engine->getMaxClients(); i++)
 		{
 			Entity *entity = interfaces->entityList->getEntity(i);
@@ -1000,12 +998,7 @@ void Misc::tweakPlayerAnimations(FrameStage stage) noexcept
 
 			if (config->misc.resolveLby)
 				Animations::resolve(entity);
-
-			if (auto varMap = entity->getVarMap(); varMap && config->misc.disableInterp)
-				for (int j = 0; j < varMap->entries.size; j++)
-					varMap->entries[j].needsToInterpolate = 0;
 		}
-	}
 }
 
 void Misc::autoPistol(UserCmd *cmd) noexcept
@@ -1013,7 +1006,7 @@ void Misc::autoPistol(UserCmd *cmd) noexcept
 	if (config->misc.autoPistol && localPlayer->isAlive() && localPlayer->activeWeapon())
 	{
 		const auto activeWeapon = localPlayer->getActiveWeapon();
-		if (activeWeapon && !activeWeapon->isC4() && activeWeapon->nextPrimaryAttack() > memory->globalVars->serverTime() && !activeWeapon->isGrenade())
+		if (activeWeapon && !activeWeapon->isC4() && localPlayer->shotsFired() > 0 && activeWeapon->nextPrimaryAttack() <= memory->globalVars->serverTime() + memory->globalVars->intervalPerTick && !activeWeapon->isGrenade())
 		{
 			if (activeWeapon->itemDefinitionIndex2() == WeaponId::Revolver)
 				cmd->buttons &= ~UserCmd::Button_Attack2;

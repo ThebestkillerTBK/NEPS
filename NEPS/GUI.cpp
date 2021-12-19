@@ -843,15 +843,19 @@ void GUI::renderAimbotWindow(bool contentOnly) noexcept
 		ImGui::SetNextItemWidth(100);
 		
 		ImGui::Checkbox("Humanize", &config->aimbot[currentWeapon].humanize);
-		if (config->aimbot[currentWeapon].humanize)
+		ImGui::SameLine();
+		if (ImGui::ArrowButton("humanize", ImGuiDir_Right))
+			ImGui::OpenPopup("##humanize");
+
+		if (ImGui::BeginPopup("##humanize"))
 		{
 			ImGui::SliderFloat("##acceleration", &config->aimbot[currentWeapon].acceleration, 0.0f, 5.0f, "Acceleration %.4fdeg/tick^2", ImGuiSliderFlags_Logarithmic);
 			ImGui::SliderFloat("##friction", &config->aimbot[currentWeapon].friction, 1.0f, 5.0f, "Friction %.4f", ImGuiSliderFlags_Logarithmic);
 			config->aimbot[currentWeapon].friction = std::fmaxf(1.0f, config->aimbot[currentWeapon].friction);
 		}
 
-		ImGui::SliderFloat("#rcsH", &config->aimbot[currentWeapon].recoilReductionH, 0.0f, 100.0f, "RCS Horizontal %.0f%%");
-		ImGui::SliderFloat("#rcsV", &config->aimbot[currentWeapon].recoilReductionV, 0.0f, 100.0f, "RCS Vertical %.0f%%");
+		ImGui::SliderFloat("#rcsH", &config->aimbot[currentWeapon].recoilReductionH, 0.0f, 100.0f, "RCS horizontal %.1f%%");
+		ImGui::SliderFloat("#rcsV", &config->aimbot[currentWeapon].recoilReductionV, 0.0f, 100.0f, "RCS vertical %.1f%%");
 
 	}
 
@@ -2650,8 +2654,8 @@ void GUI::renderMiscWindow(bool contentOnly) noexcept
 	ImGuiCustom::keyBind("Menu key", &config->misc.menuKey);
 	if (config->misc.menuKey == 1) config->misc.menuKey = 0;
 
-	ImGui::Checkbox("Always full-auto", &config->misc.autoPistol);
-
+	ImGui::Checkbox("Full-auto", &config->misc.autoPistol);
+	ImGui::SameLine(80);
 	ImGui::Checkbox("Fast plant", &config->misc.fastPlant);
 
 	ImGui::Checkbox("Auto reload", &config->misc.autoReload);
@@ -2693,7 +2697,7 @@ void GUI::renderMiscWindow(bool contentOnly) noexcept
 	ImGui::Checkbox("Fix mouse delta", &config->misc.fixMouseDelta);
 	ImGui::Checkbox("Fix local animations", &config->misc.fixAnimation);
 	ImGui::Checkbox("Disable model occlusion", &config->misc.disableModelOcclusion);
-	ImGui::Checkbox("Disable interpolation", &config->misc.disableInterp);
+	ImGui::Checkbox("Disable extrapolation", &config->misc.noExtrapolate);
 	ImGui::Checkbox("Disable IK", &config->misc.disableIK);
 	ImGui::Checkbox("Resolve LBY", &config->misc.resolveLby);
 
