@@ -30,6 +30,7 @@ namespace Visuals
     bool removeWeapons(const char* modelName) noexcept;
     void skybox(FrameStage stage) noexcept;
     void bulletBeams(GameEvent *event);
+    void bulletImpacts(GameEvent* event) noexcept;
     void drawMolotovHull(ImDrawList *drawList) noexcept;
     void drawSmokeTimer(ImDrawList* drawList) noexcept;
     void drawNadeBlast(ImDrawList* drawList) noexcept;

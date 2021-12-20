@@ -82,6 +82,7 @@ void EventListener::fireGameEvent(GameEvent *event)
 		break;
 	case fnv::hash("bullet_impact"):
 		Visuals::bulletBeams(event);
+		Visuals::bulletImpacts(event);
 		break;
 	case fnv::hash("vote_cast"):
 		Misc::onPlayerVote(*event);

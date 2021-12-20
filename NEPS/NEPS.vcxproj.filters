@@ -532,6 +532,9 @@
     <ClInclude Include="SDK\FileSystem.h">
       <Filter>SDK</Filter>
     </ClInclude>
+    <ClInclude Include="SDK\DebugOverlay.h">
+      <Filter>SDK</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Resources\logo.png">

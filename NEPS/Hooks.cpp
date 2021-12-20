@@ -33,6 +33,7 @@
 #include "SDK/Input.h"
 #include "SDK/InputSystem.h"
 #include "SDK/ModelRender.h"
+#include "SDK/NetworkChannel.h"
 #include "SDK/Panel.h"
 #include "SDK/Sound.h"
 #include "SDK/StudioRender.h"
@@ -162,6 +163,27 @@ static void __fastcall checkFileCRC() noexcept
 	hooks->originalCheckFileCRC();
 }
 
+static int __fastcall sendDatagram(NetworkChannel* network, void* edx, void* datagram)
+{
+	auto original = hooks->networkChannel.getOriginal<int, 46, void*>(datagram);
+	if (!config->backtrack.fakeLatency || datagram || !interfaces->engine->isInGame())
+		return original(network, datagram);
+
+	int instate = network->inReliableState;
+	int insequencenr = network->inSequenceNr;
+
+	float delta = std::max(0.f, config->backtrack.fakeLatencyAmount / 1000.f);
+
+	Backtrack::addLatencyToNetwork(network, delta);
+
+	int result = original(network, datagram);
+
+	network->inReliableState = instate;
+	network->inSequenceNr = insequencenr;
+
+	return result;
+}
+
 static bool previousSendPacket;
 static UserCmd previousCmd;
 
@@ -202,6 +224,17 @@ static bool __stdcall createMove(float inputSampleTime, UserCmd *cmd) noexcept
 	Misc::prepareRevolver(cmd);
 	Aimbot::predictPeek(cmd);
 	if (static Helpers::KeyBindState flag; flag[config->exploits.slowwalk]) Misc::slowwalk(cmd);
+	static void* oldPointer = nullptr;
+
+	auto network = interfaces->engine->getNetworkChannel();
+	if (oldPointer != network && network && localPlayer)
+	{
+		oldPointer = network;
+		Backtrack::updateIncomingSequences();
+		hooks->networkChannel.init(network);
+		hooks->networkChannel.hookAt(46, sendDatagram);
+	}
+	Backtrack::updateIncomingSequences();
 
 	EnginePrediction::run(cmd);
 	NadePrediction::run(cmd);
@@ -793,6 +826,7 @@ void Hooks::uninstall() noexcept
 	surface.restore();
 	svCheats.restore();
 	viewRender.restore();
+	networkChannel.restore();
 	
 
 	netvars->restore();

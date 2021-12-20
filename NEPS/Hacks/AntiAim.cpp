@@ -103,8 +103,6 @@ void AntiAim::run(UserCmd* cmd, const Vector& currentViewAngles, bool& sendPacke
 {
 	if (!canAntiAim(cmd)) return;
 
-
-
 	const auto networkChannel = interfaces->engine->getNetworkChannel();
 	if (!networkChannel)
 		return;

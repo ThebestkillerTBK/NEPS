@@ -14,13 +14,19 @@
 
 #include "../lib/Helpers.hpp"
 
-static std::array<std::deque<Record>, 65> records;
+static std::array<std::deque<Record>, 513> records;
+static std::deque<incomingSequence> sequences;
+
+float getExtraTicks() noexcept
+{
+	if (!config->backtrack.fakeLatency || config->backtrack.fakeLatencyAmount <= 0)
+		return 0.f;
+	return static_cast<float>(config->backtrack.fakeLatencyAmount) / 1000.f;
+}
 
 void Backtrack::update(FrameStage stage) noexcept
 {
 	int timeLimit = config->backtrack.timeLimit;
-	if (timeLimit <= 0 || timeLimit >= 201) { config->backtrack.fakeLatency = true; }
-	else { config->backtrack.fakeLatency = false; }
 
 	if (stage == FrameStage::RenderStart)
 	{
@@ -57,7 +63,7 @@ void Backtrack::update(FrameStage stage) noexcept
 
 			records[i].push_front(record);
 
-			while (records[i].size() > 3 && records[i].size() > static_cast<size_t>(Helpers::timeToTicks(static_cast<float>(config->backtrack.timeLimit) / 1000.f)))
+			while (records[i].size() > 3 && records[i].size() > static_cast<size_t>(Helpers::timeToTicks(static_cast<float>(config->backtrack.timeLimit) / 1000.f + getExtraTicks())))
 				records[i].pop_back();
 
 			if (auto invalid = std::find_if(std::cbegin(records[i]), std::cend(records[i]), [](const Record &rec) { return !valid(rec.simulationTime); }); invalid != std::cend(records[i]))
@@ -138,6 +144,49 @@ void Backtrack::run(UserCmd *cmd) noexcept
 	}
 }
 
+void Backtrack::addLatencyToNetwork(NetworkChannel* network, float latency) noexcept
+{
+	for (auto& sequence : sequences)
+	{
+		if (memory->globalVars->serverTime() - sequence.servertime >= latency)
+		{
+			network->inReliableState = sequence.inreliablestate;
+			network->inSequenceNr = sequence.sequencenr;
+			break;
+		}
+	}
+}
+
+void Backtrack::updateIncomingSequences() noexcept
+{
+	static int lastIncomingSequenceNumber = 0;
+
+	if (!config->backtrack.fakeLatency)
+		return;
+
+	if (!localPlayer)
+		return;
+
+	auto network = interfaces->engine->getNetworkChannel();
+	if (!network)
+		return;
+
+	if (network->inSequenceNr != lastIncomingSequenceNumber)
+	{
+		lastIncomingSequenceNumber = network->inSequenceNr;
+
+		incomingSequence sequence{ };
+		sequence.inreliablestate = network->inReliableState;
+		sequence.sequencenr = network->inSequenceNr;
+		sequence.servertime = memory->globalVars->serverTime();
+		sequences.push_front(sequence);
+	}
+
+	while (sequences.size() > 2048)
+		sequences.pop_back();
+}
+
+
 const std::deque<Record> &Backtrack::getRecords(std::size_t index) noexcept
 {
 	return records[index];
@@ -166,4 +215,9 @@ bool Backtrack::valid(float simTime) noexcept
 
 	auto delta = std::clamp(networkChannel->getLatency(0) + networkChannel->getLatency(1) + getLerp(), 0.0f, maxUnlagVar->getFloat()) - (memory->globalVars->serverTime() - simTime);
 	return std::abs(delta) <= 0.2f;
+}
+
+float Backtrack::getMaxUnlag() noexcept
+{
+	return interfaces->cvar->findVar("sv_maxunlag")->getFloat();
 }

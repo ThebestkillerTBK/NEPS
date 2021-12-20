@@ -134,7 +134,7 @@ void Aimbot::predictPeek(UserCmd *cmd) noexcept
 		if (damage > 0 && trace.entity == entity && (!cfg.visibleOnly || !goesThroughWall))
 		{
 			if (cfg.autoScope && !localPlayer->isScoped() && activeWeapon->isSniperRifle())
-				cmd->buttons |= UserCmd::Button_Attack2;
+				cmd->buttons |= UserCmd::Button_Zoom;
 
 			if (cfg.autoStop && !activeWeapon->isKnife())
 				Misc::slowwalk(cmd);

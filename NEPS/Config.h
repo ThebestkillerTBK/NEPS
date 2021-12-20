@@ -115,6 +115,7 @@ public:
 		bool recoilBasedFov = false;
 		int timeLimit = 200;
 		bool fakeLatency = false;
+		int fakeLatencyAmount = 0;
 		bool drawAllChams = false;
 	} backtrack;
 
@@ -276,6 +277,9 @@ public:
 		Beams selfBeams;
 		Beams allyBeams;
 		Beams enemyBeams;
+
+		Color4Toggle bulletBox;
+		float bulletBoxTime = 4.0f;
 
 		struct Dlights
 		{

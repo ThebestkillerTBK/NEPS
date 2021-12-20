@@ -426,6 +426,7 @@ static void from_json(const json &j, Config::Backtrack &b)
 	read(j, "Time limit", b.timeLimit);
 	read(j, "Recoil Based FOV", b.recoilBasedFov);
 	read(j, "Fake Latency", b.fakeLatency);
+	read(j, "Fake Latency Time", b.fakeLatencyAmount);
 	read(j, "Draw All Chams", b.drawAllChams);
 }
 
@@ -626,6 +627,8 @@ static void from_json(const json &j, Config::Visuals &v)
 	read<value_t::object>(j, "Reload timer", v.reloadProgress);
 	read<value_t::object>(j, "Nade blast", v.nadeBlast);
 	read<value_t::object>(j, "Draw aimbot fov", v.drawAimbotFov);
+	read<value_t::object>(j, "Bullet Impacts", v.bulletBox);
+	read(j, "Bullet Impacts time", v.bulletBoxTime);
 }
 
 static void from_json(const json &j, sticker_setting &s)
@@ -1195,6 +1198,7 @@ static void to_json(json &j, const Config::Backtrack &o, const Config::Backtrack
 	WRITE("Time limit", timeLimit);
 	WRITE("Recoil Based FOV", recoilBasedFov);
 	WRITE("Fake Latency", fakeLatency);
+	WRITE("Fake Latency Time", fakeLatencyAmount);
 	WRITE("Draw All Chams", drawAllChams);
 }
 
@@ -1629,6 +1633,8 @@ static void to_json(json &j, const Config::Visuals &o)
 	WRITE("Reload timer", reloadProgress);
 	WRITE("Nade blast", nadeBlast);
 	WRITE("Draw aimbot fov", drawAimbotFov);
+	WRITE("Bullet Impacts", bulletBox);
+	WRITE("Bullet Impacts time", bulletBoxTime);
 }
 
 static void to_json(json &j, const ImVec4 &o)

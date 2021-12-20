@@ -710,7 +710,14 @@ bool Helpers::lbyUpdate(Entity* animatable, float& nextUpdate) noexcept
 	if (!animatable->isPlayer())
 		return false;
 
+	static auto spawnTime = animatable->spawnTime();
 	const auto time = memory->globalVars->serverTime();
+
+	if (spawnTime != animatable->spawnTime())
+	{
+		spawnTime = animatable->spawnTime();
+		nextUpdate = -1.f;
+	}
 
 	if (animatable->velocity().length2D() > 0.1f || std::fabsf(animatable->velocity().z) > 100.0f)
 		nextUpdate = time + 0.22f;

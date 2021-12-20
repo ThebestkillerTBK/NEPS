@@ -6,6 +6,8 @@
 #include "../SDK/Cvar.h"
 #include "../SDK/ClientMode.h"
 #include "../SDK/ConVar.h"
+
+#include "../SDK/DebugOverlay.h"
 #include "../SDK/Entity.h"
 #include "../SDK/FrameStage.h"
 #include "../SDK/GameEvent.h"
@@ -30,6 +32,7 @@
 #include <shared_lib/imgui/imgui_internal.h>
 
 #include <array>
+#include <deque>
 
 void Visuals::musicKit(FrameStage stage) noexcept
 {
@@ -722,6 +725,39 @@ void Visuals::bulletBeams(GameEvent *event)
 		beam->flags &= ~FBEAM_FOREVER;
 		beam->die = memory->globalVars->currentTime + cfg->life;
 	}
+}
+
+void Visuals::bulletImpacts(GameEvent* event) noexcept
+{
+	static std::deque<Vector> positions;
+
+	if (!config->visuals.bulletBox.enabled)
+		return;
+
+	if (!localPlayer)
+		return;
+
+	if (!interfaces->debugOverlay)
+		return;
+
+	if (event->getInt("userid") != localPlayer->getUserId())
+		return;
+
+	Vector endPos = Vector{ event->getFloat("x"), event->getFloat("y"), event->getFloat("z") };
+	positions.push_front(endPos);
+
+	const int r = static_cast<int>(config->visuals.bulletBox.color[0] * 255.f);
+	const int g = static_cast<int>(config->visuals.bulletBox.color[1] * 255.f);
+	const int b = static_cast<int>(config->visuals.bulletBox.color[2] * 255.f);
+	const int a = static_cast<int>(config->visuals.bulletBox.color[3] * 255.f);
+
+	for (int i = 0; i < static_cast<int>(positions.size()); i++)
+	{
+		if (!positions.at(i).notNull())
+			continue;
+		interfaces->debugOverlay->boxOverlay(positions.at(i), Vector{ -2.0f, -2.0f, -2.0f }, Vector{ 2.0f, 2.0f, 2.0f }, Vector{ 0.0f, 0.0f, 0.0f }, r, g, b, a, config->visuals.bulletBoxTime);
+	}
+	positions.clear();
 }
 
 void Visuals::drawMolotovHull(ImDrawList *drawList) noexcept

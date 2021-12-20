@@ -8,6 +8,7 @@
 class BaseFileSystem;
 class Client;
 class Cvar;
+class DebugOverlay;
 class Effects;
 class Engine;
 class EngineTrace;
@@ -40,6 +41,7 @@ public:
 	GAME_INTERFACE(BaseFileSystem, baseFileSystem, "filesystem_stdio", "VBaseFileSystem011")
 	GAME_INTERFACE(Client, client, "client", "VClient018")
 	GAME_INTERFACE(Cvar, cvar, "vstdlib", "VEngineCvar007")
+	GAME_INTERFACE(DebugOverlay, debugOverlay, "engine", "VDebugOverlay004")
 	GAME_INTERFACE(Effects, effects, "engine", "VEngineEffects001")
 	GAME_INTERFACE(Engine, engine, "engine", "VEngineClient014")
 	GAME_INTERFACE(EngineTrace, engineTrace, "engine", "EngineTraceClient004")

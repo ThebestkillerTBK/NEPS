@@ -1299,6 +1299,8 @@ void GUI::renderBacktrackWindow(bool contentOnly) noexcept
 	ImGui::Checkbox("Chams Last/All Tick", &config->backtrack.drawAllChams);
 	ImGui::PushItemWidth(180);
 	ImGui::SliderInt("##time", &config->backtrack.timeLimit, 1, 200, "Time limit %dms");
+	ImGui::Checkbox("Fake latency", &config->backtrack.fakeLatency);
+	ImGui::SliderInt("##time2", &config->backtrack.fakeLatencyAmount, 0, 200, "Fake latency %dms");
 
 	ImGui::PopItemWidth();
 	if (!contentOnly)
@@ -1998,6 +2000,8 @@ void GUI::renderVisualsWindow(bool contentOnly) noexcept
 
 	ImGui::PushItemWidth(100);
 	ImGui::Combo("Bullet impacts", &config->visuals.bulletImpacts, "None\0All\0Client\0Server\0");
+	ImGuiCustom::colorPicker("Bullet Box", config->visuals.bulletBox.color.data(), &config->visuals.bulletBox.color[3], nullptr, nullptr, &config->visuals.bulletBox.enabled);
+	ImGui::SliderFloat("Bullet Box time", &config->visuals.bulletBoxTime, 0.1f, 5.0f, "%.2fs");
 	ImGui::Combo("Accuracy tracers", &config->visuals.accuracyTracers, "None\0Hover\0Contact\0");
 	ImGui::PopItemWidth();
 
