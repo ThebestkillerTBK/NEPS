@@ -2001,7 +2001,15 @@ void GUI::renderVisualsWindow(bool contentOnly) noexcept
 	ImGui::PushItemWidth(100);
 	ImGui::Combo("Bullet impacts", &config->visuals.bulletImpacts, "None\0All\0Client\0Server\0");
 	ImGuiCustom::colorPicker("Bullet Box", config->visuals.bulletBox.color.data(), &config->visuals.bulletBox.color[3], nullptr, nullptr, &config->visuals.bulletBox.enabled);
-	ImGui::SliderFloat("Bullet Box time", &config->visuals.bulletBoxTime, 0.1f, 5.0f, "%.2fs");
+	ImGui::SameLine();
+	if (ImGui::ArrowButton("bulletb", ImGuiDir_Right))
+		ImGui::OpenPopup("##bulletb");
+
+	if (ImGui::BeginPopup("##bulletb"))
+	{
+		ImGui::SliderFloat("Bullet Box time", &config->visuals.bulletBoxTime, 0.1f, 5.0f, "%.2fs");
+		ImGui::EndPopup();
+	}
 	ImGui::Combo("Accuracy tracers", &config->visuals.accuracyTracers, "None\0Hover\0Contact\0");
 	ImGui::PopItemWidth();
 
