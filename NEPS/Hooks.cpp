@@ -101,6 +101,7 @@ static HRESULT __stdcall present(IDirect3DDevice9 *device, const RECT *src, cons
 	Visuals::drawNadeBlast(ImGui::GetBackgroundDrawList());
 	Visuals::playerBounds(ImGui::GetBackgroundDrawList());
 	Visuals::playerVelocity(ImGui::GetBackgroundDrawList());
+	Misc::drawAutoPeek(ImGui::GetBackgroundDrawList());
 	Misc::visualizeBlockBot(ImGui::GetBackgroundDrawList());
 
 

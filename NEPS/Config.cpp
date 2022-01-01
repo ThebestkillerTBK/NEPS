@@ -388,6 +388,7 @@ static void from_json(const json &j, Config::Aimbot &a)
 	read(j, "Interpolation", a.interpolation);
 	read(j, "Smooth start", a.quadratic);
 	read(j, "Linear speed", a.linear);
+	read(j, "Simulate speed", a.fakeMouseMovement);
 	read(j, "Humanize", a.humanize);
 	read(j, "Acceleration", a.acceleration);
 	read(j, "Friction", a.friction);
@@ -897,11 +898,13 @@ static void from_json(const json &j, Config::Movement &m)
 {
 	read<value_t::object>(j, "Enabled", m.bunnyHop);
 	read(j, "Bunny Chance", m.bunnyChance);
+	read(j, "Humanize", m.humanize);
 	read(j, "Auto strafe", m.autoStrafe);
 	read<value_t::object>(j, "Edge jump", m.edgeJump);
 	read<value_t::object>(j, "Air duck", m.autoJumpBug);
 	read(j, "Fast stop", m.fastStop);
-	read(j, "Quick Peek", m.quickPeekKey);
+	read<value_t::object>(j, "Quick Peek", m.quickPeekKey);
+	read<value_t::object>(j, "Quick Peek Color", m.quickPeekColor);
 }
 
 bool Config::load(const char8_t *name, bool incremental) noexcept
@@ -1160,6 +1163,7 @@ static void to_json(json &j, const Config::Aimbot &o, const Config::Aimbot &dumm
 	WRITE("Interpolation", interpolation);
 	WRITE("Smooth start", quadratic);
 	WRITE("Linear speed", linear);
+	WRITE("Simulate speed", fakeMouseMovement);
 	WRITE("Humanize", humanize);
 	WRITE("Acceleration", acceleration);
 	WRITE("Friction", friction);
@@ -1496,11 +1500,12 @@ static void to_json(json &j, const Config::Movement &o)
 
 	WRITE("Enabled", bunnyHop);
 	WRITE("Bunny Chance", bunnyChance);
+	WRITE("Humanize", humanize);
 	WRITE("Auto strafe", autoStrafe);
 	WRITE("Edge jump", edgeJump);
 	WRITE("Air duck", autoJumpBug);
 	WRITE("Fast stop", fastStop);
-	WRITE("Quick Peek", quickPeekKey);
+	WRITE("Quick Peek Color", quickPeekColor);
 }
 
 static void to_json(json &j, const Config::Visuals::ColorCorrection &o, const Config::Visuals::ColorCorrection &dummy)

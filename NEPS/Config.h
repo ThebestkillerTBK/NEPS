@@ -63,6 +63,7 @@ public:
 		float quadratic = 0.0f;
 		float linear = 255.0f;
 		bool humanize = false;
+		bool fakeMouseMovement = false;
 		float acceleration = 0.6f;
 		float friction = 2.0f;
 		bool betweenShots = true;
@@ -435,11 +436,13 @@ public:
 	{
 		KeyBind bunnyHop;
 		int bunnyChance = 100;
+		bool humanize = false;
 		bool autoStrafe = false;
 		KeyBind edgeJump;
 		KeyBind autoJumpBug;
 		bool fastStop = false;
-		int quickPeekKey = 0;
+		KeyBind quickPeekKey;
+		Color4Toggle quickPeekColor;
 	} movement;
 
 	struct Misc

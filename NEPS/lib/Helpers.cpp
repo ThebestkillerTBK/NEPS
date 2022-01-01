@@ -10,6 +10,18 @@
 #include <shared_lib/imgui/imgui_internal.h>
 #include <fstream>
 
+bool Helpers::IsPlayerBehind(Entity* player) noexcept
+{
+	Vector pOrigin = player->getAbsOrigin();
+	Vector toTarget = (localPlayer->getAbsOrigin() - pOrigin);
+	Vector playerViewAngles;
+	Vector::AngleVectors(player->eyeAngles(), playerViewAngles);
+	if (toTarget.dotProduct(playerViewAngles) > -0.5f)
+		return false;
+	else
+		return true;
+}
+
 Entity* Helpers::getTargetNoWall(Vector vangle, bool teamDamage, float fov1, float dist1)
 {
 	for (const auto& player : GameData::players())

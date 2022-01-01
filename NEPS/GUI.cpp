@@ -393,7 +393,8 @@ void GUI::renderMenuBar() noexcept
 			ImGui::EndMenu();
 		}
 		ImGui::Separator();
-		ImGui::TextColored({ .5f, 0.22f, 0.f, 1.f}, "[NEPS]" );
+		auto color = Helpers::hsvToRgb(0.6f * memory->globalVars->realTime * 0.1f, 1.0f, 1.0f);
+		ImGui::TextColored({color[0], color[1], color[2], 1.0f}, "[NEPS]");
 
 		const auto time = std::time(nullptr);
 		const auto localTime = std::localtime(&time);
@@ -779,6 +780,9 @@ void GUI::renderAimbotWindow(bool contentOnly) noexcept
 			config->aimbot[currentWeapon].aimbotOverride.minDamageAutoWall = std::max(config->aimbot[currentWeapon].aimbotOverride.minDamageAutoWall, 0);
 			ImGui::EndPopup();
 		}
+
+
+		ImGui::Checkbox("Simulate speed", &config->aimbot[currentWeapon].fakeMouseMovement);
 
 		ImGui::SetNextItemWidth(100);
 
@@ -2606,12 +2610,23 @@ void GUI::renderMovementWindow(bool contentOnly) noexcept
 	}
 
 	ImGuiCustom::keyBind("Bunny Hop", config->movement.bunnyHop);
-	ImGui::SliderInt("##bhopchance", &config->movement.bunnyChance, 0, 100, "BhopChance: %d %");
+	ImGui::SameLine();
+
+	if (ImGui::ArrowButton("bhop", ImGuiDir_Right))
+		ImGui::OpenPopup("##bhop");
+
+	if (ImGui::BeginPopup("##bhop"))
+	{
+		ImGui::Checkbox("Humanize", &config->movement.humanize);
+		ImGui::SliderInt("##bhopchance", &config->movement.bunnyChance, 0, 100, "BhopChance: %d %");
+		ImGui::EndPopup();
+	}
 	ImGui::Checkbox("Autostrafe", &config->movement.autoStrafe);
 	ImGuiCustom::keyBind("Edge jump", config->movement.edgeJump);
 	ImGuiCustom::keyBind("Auto Jump Bug", config->movement.autoJumpBug);
 	ImGui::Checkbox("Fast stop", &config->movement.fastStop);
-	ImGuiCustom::keyBind("Quick Peek", &config->movement.quickPeekKey);
+	ImGuiCustom::keyBind("Quick Peek", config->movement.quickPeekKey);
+	ImGuiCustom::colorPicker("Draw Quick Peek", config->movement.quickPeekColor);
 
 	if (!contentOnly)
 		ImGui::End();

@@ -538,23 +538,35 @@ void Aimbot::run(UserCmd *cmd) noexcept
 			if (cfg.interpolation == 2 || cfg.interpolation == 3)
 				targetAngle = targetAngle * (1.0f - cfg.quadratic);
 
+
+
+
 			const auto l = targetAngle.length();
+
+
+			const auto freq = 25.f;
+			const auto multiplier = 0.4f;
+			float smoothing = 1.0f;
+			if (cfg.fakeMouseMovement)
+				smoothing = multiplier * cos(freq * now + sin(-(freq * now))) + sin(2.0f * multiplier) + 0.6f;
+			else
+				smoothing = 1.0f;
+
 			if ((cfg.interpolation == 1 || cfg.interpolation == 3) && l > cfg.linear)
-				targetAngle *= cfg.linear / l;
+					targetAngle *= cfg.linear * smoothing / l;
 
 			if (cfg.humanize)
 			{
-				targetAngle = targetAngle * (1.0f - cfg.quadratic);
 				const auto l = targetAngle.length();
 				if (l > cfg.acceleration)
-					aimVelocity += targetAngle / l * cfg.acceleration;
+					aimVelocity += targetAngle * smoothing / l * cfg.acceleration;
 				else
-					aimVelocity += targetAngle;
+					aimVelocity += targetAngle * smoothing;
 			}
 
 			if (targetAngle.notNull() && !cfg.humanize)
 			{
-				cmd->viewangles += targetAngle;
+				cmd->viewangles += targetAngle * smoothing;
 
 				if (!cfg.silent)
 					interfaces->engine->setViewAngles(cmd->viewangles);

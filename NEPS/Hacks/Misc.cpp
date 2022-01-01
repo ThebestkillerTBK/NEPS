@@ -171,65 +171,101 @@ struct customCmd
 	float upmove;
 };
 
-bool hasShot;
-Vector quickPeekStartPos;
-ImVec2 drawPos;
-std::vector<customCmd>usercmdQuickpeek;
-int qpCount;
+static Vector peekPosition{};
 
-void Misc::drawQuickPeekStartPos() noexcept
+void Misc::drawAutoPeek(ImDrawList* drawList) noexcept
 {
-	if (!Helpers::worldToScreen(quickPeekStartPos, drawPos))
+	static Helpers::KeyBindState flag;
+	auto keyBind = flag[config->movement.quickPeekKey];
+	if (!keyBind || !config->movement.quickPeekColor.enabled)
 		return;
 
-	if (quickPeekStartPos != Vector{ 0, 0, 0 }) {
-		interfaces->surface->setDrawColor(255, 255, 255);
-		interfaces->surface->drawCircle(drawPos.x, drawPos.y, 0, 10);
-	}
-}
-
-void gotoStart(UserCmd* cmd) {
-	if (usercmdQuickpeek.empty()) return;
-	if (hasShot)
+	if (peekPosition.notNull())
 	{
-		if (qpCount > 0)
+		constexpr float step = M_PI * 2.0f / 20.0f;
+		std::vector<ImVec2> points;
+		for (float lat = 0.f; lat <= M_PI * 2.0f; lat += step)
 		{
-			cmd->upmove = -usercmdQuickpeek.at(qpCount).upmove;
-			cmd->sidemove = -usercmdQuickpeek.at(qpCount).sidemove;
-			cmd->forwardmove = -usercmdQuickpeek.at(qpCount).forwardmove;
-			qpCount--;
+			const auto& point3d = Vector{ std::sin(lat), std::cos(lat), 0.f } *15.f;
+			ImVec2 point2d;
+			if (Helpers::worldToScreen(peekPosition + point3d, point2d))
+				points.push_back(point2d);
 		}
-	}
-	else
-	{
-		qpCount = usercmdQuickpeek.size();
+
+		const ImU32 color = (Helpers::calculateColor({ config->movement. quickPeekColor}));
+		auto flags_backup = drawList->Flags;
+		drawList->Flags |= ImDrawListFlags_AntiAliasedFill;
+		drawList->AddConvexPolyFilled(points.data(), points.size(), color);
+		drawList->AddPolyline(points.data(), points.size(), color, true, 2.f);
+		drawList->Flags = flags_backup;
 	}
 }
 
 void Misc::quickPeek(UserCmd* cmd) noexcept
 {
-	if (!localPlayer || !localPlayer->isAlive()) return;
-	if (GetAsyncKeyState(config->movement.quickPeekKey)) {
-		if (quickPeekStartPos == Vector{ 0, 0, 0 }) {
-			quickPeekStartPos = localPlayer->getAbsOrigin();
-		}
-		else {
-			customCmd tempCmd = {};
-			tempCmd.forwardmove = cmd->forwardmove;
-			tempCmd.sidemove = cmd->sidemove;
-			tempCmd.upmove = cmd->upmove;
+	static bool hasShot = false;
 
-			if (cmd->buttons & UserCmd::Button_Attack) hasShot = true;
-			gotoStart(cmd);
+	static Helpers::KeyBindState flag;
+	auto keyBind = flag[config->movement.quickPeekKey];
+	static auto reset = false;
 
-			if (!hasShot)
-				usercmdQuickpeek.push_back(tempCmd);
+	if (!keyBind || reset)
+	{
+		hasShot = false;
+		peekPosition = Vector{};
+		reset = false;
+		return;
+	}
+
+	if (!localPlayer)
+		return;
+
+	if (!localPlayer->isAlive())
+	{
+		hasShot = false;
+		peekPosition = Vector{};
+		return;
+	}
+
+	if (const auto mt = localPlayer->moveType(); mt == MoveType::Ladder || mt == MoveType::Noclip || !(localPlayer->flags() & 1))
+		return;
+
+	if (keyBind)
+	{
+		if (!peekPosition.notNull())
+			peekPosition = localPlayer->getRenderOrigin();
+
+		if (cmd->buttons & UserCmd::Button_Attack)
+			hasShot = true;
+
+		if (hasShot)
+		{
+			const float yaw = cmd->viewangles.y;
+			const auto difference = localPlayer->getRenderOrigin() - peekPosition;
+
+			if (difference.length2D() > 5.0f)
+			{
+				const auto velocity = Vector{
+					difference.x * std::cos(yaw / 180.0f * 3.141592654f) + difference.y * std::sin(yaw / 180.0f * 3.141592654f),
+					difference.y * std::cos(yaw / 180.0f * 3.141592654f) - difference.x * std::sin(yaw / 180.0f * 3.141592654f),
+					difference.z };
+
+				cmd->forwardmove = -velocity.x * 20.f;
+				cmd->sidemove = velocity.y * 20.f;
+			}
+			else
+			{
+				hasShot = false;
+				peekPosition = Vector{};
+				reset = true;
+			}
 		}
 	}
-	else {
+	else
+	{
 		hasShot = false;
-		quickPeekStartPos = Vector{ 0, 0, 0 };
-		usercmdQuickpeek.clear();
+		peekPosition = Vector{};
+		reset = true;
 	}
 }
 
@@ -628,10 +664,25 @@ void Misc::bunnyHop(UserCmd* cmd) noexcept
 	if (static Helpers::KeyBindState flag; flag[config->movement.autoJumpBug])
 		return;
 
+	static float previousTime = memory->globalVars->realTime;
+	static bool fakeSlow = false;
+
 	if (static Helpers::KeyBindState flag; flag[config->movement.bunnyHop] && !(localPlayer->flags() & PlayerFlag_OnGround) && !wasLastTimeOnGround)
-		if (rand() % 100 <= chanceToHit) {
+	{
+		if (rand() % 100 <= chanceToHit && !fakeSlow) {
 			cmd->buttons &= ~UserCmd::Button_Jump;
 		}
+		else {
+			fakeSlow = true;
+		}
+	}
+		
+
+	if (config->movement.humanize && fakeSlow && memory->globalVars->realTime > previousTime + 0.05f) {
+		cmd->buttons &= ~UserCmd::Button_Jump;
+		fakeSlow = false;
+		previousTime = memory->globalVars->realTime;
+	}
 
 	if (!wasLastTimeOnGround && hasLanded) {
 		bhopInSeries++;
