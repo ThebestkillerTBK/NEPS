@@ -575,6 +575,8 @@ static void from_json(const json &j, Config::Visuals &v)
 	read<value_t::object>(j, "Thirdperson", v.thirdPerson);
 	read(j, "Thirdperson distance", v.thirdpersonDistance);
 	read(j, "Thirdperson collision", v.thirdpersonCollision);
+	read<value_t::object>(j, "Freecam", v.freeCam);
+	read(j, "Freecam speed", v.freeCamSpeed);
 	read<value_t::object>(j, "Flashlight", v.flashlight);
 	read(j, "Flashlight brightness", v.flashlightBrightness);
 	read(j, "Flashlight distance", v.flashlightDistance);
@@ -783,6 +785,12 @@ static void from_json(const json& j, Config::Misc::DamageList& dl)
 	read(j, "No Title Bar", dl.noTitleBar);
 }
 
+static void from_json(const json& j, Config::Misc::TeamDamageList& dl)
+{
+	read(j, "Enabled", dl.enabled);
+	read(j, "No Title Bar", dl.noTitleBar);
+}
+
 static void from_json(const json &j, Config::Misc &m)
 {
 	read(j, "Menu key", m.menuKey);
@@ -863,9 +871,6 @@ static void from_json(const json &j, Config::Griefing &g)
 	read<value_t::object>(j, "Blockbot", g.blockbot);
 	read(j, "Vote reveal", g.revealVotes);
 	read<value_t::object>(j, "Spam use", g.spamUse);
-	read<value_t::object>(j, "Team damage list", g.teamDamageList);
-	read<value_t::object>(j, "Nuke chat", g.chatNuke);
-	read<value_t::object>(j, "Basmala chat", g.chatBasmala);
 	read(j, "Auto disconnect", g.autoDisconnect);
 }
 
@@ -889,6 +894,14 @@ static void from_json(const json &j, Config::Griefing::Blockbot &b)
 	read(j, "Trajectory factor", b.trajectoryFac);
 	read(j, "Distance factor", b.distanceFac);
 	read<value_t::object>(j, "Visualise", b.visualize);
+}
+static void from_json(const json &j, Config::Griefing::ChatSpammer&q)
+{
+	read<value_t::object>(j, "KeyBind", q.keyBind);
+	read(j, "Chat Nuke", q.chatNuke);
+	read(j, "Chat Basmala", q.chatBasmala);
+	read(j, "Custom", q.custom);
+	read<value_t::string>(j, "Text", q.text);
 }
 
 static void from_json(const json &j, Config::Movement &m)
@@ -1422,6 +1435,11 @@ static void to_json(json &j, const Config::Misc &o)
 	WRITE("KnifeBot", knifeBot);
 	WRITE("Status Bar", Sbar);
 	WRITE("Indicators", indicators);
+	WRITE("Team damage list", teamDamageList);
+	WRITE("Player List", playerList);
+	WRITE("Debug Notice", debugNotice);
+	WRITE("All Cvar", allCvar);
+	WRITE("Damage list", damageList);
 }
 
 static void to_json(json &j, const Config::Exploits &o)
@@ -1460,6 +1478,15 @@ static void to_json(json &j, const Config::Griefing::Blockbot &o, const Config::
 	WRITE("Visualise", visualize);
 }
 
+static void to_json(json &j, const Config::Griefing::ChatSpammer &o, const Config::Griefing::ChatSpammer&dummy = {})
+{
+	WRITE("KeyBind", keyBind);
+	WRITE("Chat Nuke", chatNuke);
+	WRITE("Chat Basmala", chatBasmala);
+	WRITE("Custom", custom);
+	WRITE("Text", text);
+}
+
 static void to_json(json &j, const Config::Griefing &o)
 {
 	const Config::Griefing dummy;
@@ -1481,9 +1508,8 @@ static void to_json(json &j, const Config::Griefing &o)
 	WRITE("Blockbot", blockbot);
 	WRITE("Vote reveal", revealVotes);
 	WRITE("Spam use", spamUse);
-	WRITE("Nuke chat", chatNuke);
-	WRITE("Basmala chat", chatBasmala);
 	WRITE("Auto disconnect", autoDisconnect);
+	WRITE("Chat Spammer", chatSpammer);
 }
 
 static void to_json(json &j, const Config::Movement &o)
@@ -1498,6 +1524,7 @@ static void to_json(json &j, const Config::Movement &o)
 	WRITE("Air duck", autoJumpBug);
 	WRITE("Fast stop", fastStop);
 	WRITE("Quick Peek Color", quickPeekColor);
+	WRITE("Quick Peek", quickPeekKey);
 }
 
 static void to_json(json &j, const Config::Visuals::ColorCorrection &o, const Config::Visuals::ColorCorrection &dummy)
@@ -1579,6 +1606,8 @@ static void to_json(json &j, const Config::Visuals &o)
 	WRITE("Thirdperson", thirdPerson);
 	WRITE("Thirdperson distance", thirdpersonDistance);
 	WRITE("Thirdperson collision", thirdpersonCollision);
+	WRITE("Freecam", freeCam);
+	WRITE("Freecam speed", freeCamSpeed);
 	WRITE("Flashlight", flashlight);
 	WRITE("Flashlight brightness", flashlightBrightness);
 	WRITE("Flashlight distance", flashlightDistance);

@@ -34,6 +34,106 @@
 #include <array>
 #include <deque>
 
+static int buttons = 0;
+
+void Visuals::runFreeCam(UserCmd* cmd) noexcept
+{
+	static Vector currentViewAngles = Vector{ };
+	static Vector realViewAngles = Vector{ };
+	static bool wasCrouching = false;
+	static bool hasSetAngles = false;
+
+	buttons = cmd->buttons;
+
+	if (!localPlayer || !localPlayer->isAlive())
+		return;
+
+	if (static Helpers::KeyBindState flag; !flag[config->visuals.freeCam])
+	{
+		if (hasSetAngles)
+		{
+			interfaces->engine->setViewAngles(realViewAngles);
+			cmd->viewangles = currentViewAngles;
+			if (wasCrouching)
+				cmd->buttons |= UserCmd::Button_Duck;
+			wasCrouching = false;
+			hasSetAngles = false;
+		}
+		currentViewAngles = Vector{};
+		return;
+	}
+
+	if (!currentViewAngles.notNull())
+	{
+		currentViewAngles = cmd->viewangles;
+		realViewAngles = cmd->viewangles;
+		wasCrouching = cmd->buttons & UserCmd::Button_Duck;
+	}
+
+	cmd->forwardmove = 0;
+	cmd->sidemove = 0;
+	if (wasCrouching)
+		cmd->buttons = UserCmd::Button_Duck;
+	else
+		cmd->buttons = 0;
+	cmd->viewangles = currentViewAngles;
+	hasSetAngles = true;
+}
+
+void Visuals::freeCam(ViewSetup* setup) noexcept
+{
+	static Vector newOrigin = Vector{ };
+
+	if (static Helpers::KeyBindState flag; !flag[config->visuals.freeCam])
+	{
+		newOrigin = Vector{ };
+		return;
+	}
+
+	if (!localPlayer || !localPlayer->isAlive())
+		return;
+
+	float freeCamSpeed = fabsf(static_cast<float>(config->visuals.freeCamSpeed));
+
+	if (!newOrigin.notNull())
+		newOrigin = setup->origin;
+
+	Vector forward{ }, right{ }, up{ };
+
+	Vector::fromAngleAll(setup->angles, &forward, &right, &up);
+
+	const bool backBtn = buttons & UserCmd::Button_Back;
+	const bool forwardBtn = buttons & UserCmd::Button_Forward;
+	const bool rightBtn = buttons & UserCmd::Button_MoveRight;
+	const bool leftBtn = buttons & UserCmd::Button_MoveLeft;
+	const bool shiftBtn = buttons & UserCmd::Button_Speed;
+	const bool duckBtn = buttons & UserCmd::Button_Duck;
+	const bool jumpBtn = buttons & UserCmd::Button_Jump;
+
+	if (duckBtn)
+		freeCamSpeed *= 0.45;
+
+	if (shiftBtn)
+		freeCamSpeed *= 1.65;
+
+	if (forwardBtn)
+		newOrigin += forward * freeCamSpeed;
+
+	if (rightBtn)
+		newOrigin += right * freeCamSpeed;
+
+	if (leftBtn)
+		newOrigin -= right * freeCamSpeed;
+
+	if (backBtn)
+		newOrigin -= forward * freeCamSpeed;
+
+	if (jumpBtn)
+		newOrigin += up * freeCamSpeed;
+
+	setup->origin = newOrigin;
+}
+
 void Visuals::musicKit(FrameStage stage) noexcept
 {
 	if (!config->visuals.musicKitChanger)
@@ -48,100 +148,93 @@ void Visuals::musicKit(FrameStage stage) noexcept
 }
 void Visuals::playerModel(FrameStage stage) noexcept
 {
-	if (stage != FrameStage::RenderStart && stage != FrameStage::RenderEnd)
+	if (stage != FrameStage::NetUpdateEnd && stage != FrameStage::RenderEnd)
 		return;
 
 	static int originalIdx = 0;
 
-	if (!localPlayer)
-	{
+	if (!localPlayer) {
 		originalIdx = 0;
 		return;
 	}
 
-	constexpr auto getModel = [](Team team) constexpr noexcept -> const char *
-	{
-		constexpr std::array models = {
-			//"models/player/custom_player/legacy/anime/astolfo/astolfo_v1.mdl", // Proof that all cheaters are femboys
-			"models/player/custom_player/legacy/ctm_fbi_variantb.mdl",
-			"models/player/custom_player/legacy/ctm_fbi_variantf.mdl",
-			"models/player/custom_player/legacy/ctm_fbi_variantg.mdl",
-			"models/player/custom_player/legacy/ctm_fbi_varianth.mdl",
-			"models/player/custom_player/legacy/ctm_sas_variantf.mdl",
-			"models/player/custom_player/legacy/ctm_st6_variante.mdl",
-			"models/player/custom_player/legacy/ctm_st6_variantg.mdl",
-			"models/player/custom_player/legacy/ctm_st6_varianti.mdl",
-			"models/player/custom_player/legacy/ctm_st6_variantk.mdl",
-			"models/player/custom_player/legacy/ctm_st6_variantm.mdl",
-			"models/player/custom_player/legacy/tm_balkan_variantf.mdl",
-			"models/player/custom_player/legacy/tm_balkan_variantg.mdl",
-			"models/player/custom_player/legacy/tm_balkan_varianth.mdl",
-			"models/player/custom_player/legacy/tm_balkan_varianti.mdl",
-			"models/player/custom_player/legacy/tm_balkan_variantj.mdl",
-			"models/player/custom_player/legacy/tm_leet_variantf.mdl",
-			"models/player/custom_player/legacy/tm_leet_variantg.mdl",
-			"models/player/custom_player/legacy/tm_leet_varianth.mdl",
-			"models/player/custom_player/legacy/tm_leet_varianti.mdl",
-			"models/player/custom_player/legacy/tm_phoenix_variantf.mdl",
-			"models/player/custom_player/legacy/tm_phoenix_variantg.mdl",
-			"models/player/custom_player/legacy/tm_phoenix_varianth.mdl",
+	constexpr auto getModel = [](Team team) constexpr noexcept -> const char* {
+		constexpr std::array models{
+		"models/player/custom_player/legacy/ctm_fbi_variantb.mdl",
+		"models/player/custom_player/legacy/ctm_fbi_variantf.mdl",
+		"models/player/custom_player/legacy/ctm_fbi_variantg.mdl",
+		"models/player/custom_player/legacy/ctm_fbi_varianth.mdl",
+		"models/player/custom_player/legacy/ctm_sas_variantf.mdl",
+		"models/player/custom_player/legacy/ctm_st6_variante.mdl",
+		"models/player/custom_player/legacy/ctm_st6_variantg.mdl",
+		"models/player/custom_player/legacy/ctm_st6_varianti.mdl",
+		"models/player/custom_player/legacy/ctm_st6_variantk.mdl",
+		"models/player/custom_player/legacy/ctm_st6_variantm.mdl",
+		"models/player/custom_player/legacy/tm_balkan_variantf.mdl",
+		"models/player/custom_player/legacy/tm_balkan_variantg.mdl",
+		"models/player/custom_player/legacy/tm_balkan_varianth.mdl",
+		"models/player/custom_player/legacy/tm_balkan_varianti.mdl",
+		"models/player/custom_player/legacy/tm_balkan_variantj.mdl",
+		"models/player/custom_player/legacy/tm_leet_variantf.mdl",
+		"models/player/custom_player/legacy/tm_leet_variantg.mdl",
+		"models/player/custom_player/legacy/tm_leet_varianth.mdl",
+		"models/player/custom_player/legacy/tm_leet_varianti.mdl",
+		"models/player/custom_player/legacy/tm_phoenix_variantf.mdl",
+		"models/player/custom_player/legacy/tm_phoenix_variantg.mdl",
+		"models/player/custom_player/legacy/tm_phoenix_varianth.mdl",
 
-			"models/player/custom_player/legacy/tm_pirate.mdl",
-			"models/player/custom_player/legacy/tm_pirate_varianta.mdl",
-			"models/player/custom_player/legacy/tm_pirate_variantb.mdl",
-			"models/player/custom_player/legacy/tm_pirate_variantc.mdl",
-			"models/player/custom_player/legacy/tm_pirate_variantd.mdl",
-			"models/player/custom_player/legacy/tm_anarchist.mdl",
-			"models/player/custom_player/legacy/tm_anarchist_varianta.mdl",
-			"models/player/custom_player/legacy/tm_anarchist_variantb.mdl",
-			"models/player/custom_player/legacy/tm_anarchist_variantc.mdl",
-			"models/player/custom_player/legacy/tm_anarchist_variantd.mdl",
-			"models/player/custom_player/legacy/tm_balkan_varianta.mdl",
-			"models/player/custom_player/legacy/tm_balkan_variantb.mdl",
-			"models/player/custom_player/legacy/tm_balkan_variantc.mdl",
-			"models/player/custom_player/legacy/tm_balkan_variantd.mdl",
-			"models/player/custom_player/legacy/tm_balkan_variante.mdl",
-			"models/player/custom_player/legacy/tm_jumpsuit_varianta.mdl",
-			"models/player/custom_player/legacy/tm_jumpsuit_variantb.mdl",
-			"models/player/custom_player/legacy/tm_jumpsuit_variantc.mdl"
+		"models/player/custom_player/legacy/tm_pirate.mdl",
+		"models/player/custom_player/legacy/tm_pirate_varianta.mdl",
+		"models/player/custom_player/legacy/tm_pirate_variantb.mdl",
+		"models/player/custom_player/legacy/tm_pirate_variantc.mdl",
+		"models/player/custom_player/legacy/tm_pirate_variantd.mdl",
+		"models/player/custom_player/legacy/tm_anarchist.mdl",
+		"models/player/custom_player/legacy/tm_anarchist_varianta.mdl",
+		"models/player/custom_player/legacy/tm_anarchist_variantb.mdl",
+		"models/player/custom_player/legacy/tm_anarchist_variantc.mdl",
+		"models/player/custom_player/legacy/tm_anarchist_variantd.mdl",
+		"models/player/custom_player/legacy/tm_balkan_varianta.mdl",
+		"models/player/custom_player/legacy/tm_balkan_variantb.mdl",
+		"models/player/custom_player/legacy/tm_balkan_variantc.mdl",
+		"models/player/custom_player/legacy/tm_balkan_variantd.mdl",
+		"models/player/custom_player/legacy/tm_balkan_variante.mdl",
+		"models/player/custom_player/legacy/tm_jumpsuit_varianta.mdl",
+		"models/player/custom_player/legacy/tm_jumpsuit_variantb.mdl",
+		"models/player/custom_player/legacy/tm_jumpsuit_variantc.mdl",
 
-			"models/player/custom_player/legacy/tm_phoenix_varianti.mdl",
-			"models/player/custom_player/legacy/ctm_st6_variantj.mdl",
-			"models/player/custom_player/legacy/ctm_st6_variantl.mdl",
-			"models/player/custom_player/legacy/tm_balkan_variantk.mdl",
-			"models/player/custom_player/legacy/tm_balkan_variantl.mdl",
-			"models/player/custom_player/legacy/ctm_swat_variante.mdl",
-			"models/player/custom_player/legacy/ctm_swat_variantf.mdl",
-			"models/player/custom_player/legacy/ctm_swat_variantg.mdl",
-			"models/player/custom_player/legacy/ctm_swat_varianth.mdl",
-			"models/player/custom_player/legacy/ctm_swat_varianti.mdl",
-			"models/player/custom_player/legacy/ctm_swat_variantj.mdl",
-			"models/player/custom_player/legacy/tm_professional_varf.mdl",
-			"models/player/custom_player/legacy/tm_professional_varf1.mdl",
-			"models/player/custom_player/legacy/tm_professional_varf2.mdl",
-			"models/player/custom_player/legacy/tm_professional_varf3.mdl",
-			"models/player/custom_player/legacy/tm_professional_varf4.mdl",
-			"models/player/custom_player/legacy/tm_professional_varg.mdl",
-			"models/player/custom_player/legacy/tm_professional_varh.mdl",
-			"models/player/custom_player/legacy/tm_professional_vari.mdl",
-			"models/player/custom_player/legacy/tm_professional_varj.mdl"
+		"models/player/custom_player/legacy/tm_phoenix_varianti.mdl",
+		"models/player/custom_player/legacy/ctm_st6_variantj.mdl",
+		"models/player/custom_player/legacy/ctm_st6_variantl.mdl",
+		"models/player/custom_player/legacy/tm_balkan_variantk.mdl",
+		"models/player/custom_player/legacy/tm_balkan_variantl.mdl",
+		"models/player/custom_player/legacy/ctm_swat_variante.mdl",
+		"models/player/custom_player/legacy/ctm_swat_variantf.mdl",
+		"models/player/custom_player/legacy/ctm_swat_variantg.mdl",
+		"models/player/custom_player/legacy/ctm_swat_varianth.mdl",
+		"models/player/custom_player/legacy/ctm_swat_varianti.mdl",
+		"models/player/custom_player/legacy/ctm_swat_variantj.mdl",
+		"models/player/custom_player/legacy/tm_professional_varf.mdl",
+		"models/player/custom_player/legacy/tm_professional_varf1.mdl",
+		"models/player/custom_player/legacy/tm_professional_varf2.mdl",
+		"models/player/custom_player/legacy/tm_professional_varf3.mdl",
+		"models/player/custom_player/legacy/tm_professional_varf4.mdl",
+		"models/player/custom_player/legacy/tm_professional_varg.mdl",
+		"models/player/custom_player/legacy/tm_professional_varh.mdl",
+		"models/player/custom_player/legacy/tm_professional_vari.mdl",
+		"models/player/custom_player/legacy/tm_professional_varj.mdl"
 		};
 
-		switch (team)
-		{
+		switch (team) {
 		case Team::TT: return static_cast<std::size_t>(config->visuals.playerModelT - 1) < models.size() ? models[config->visuals.playerModelT - 1] : nullptr;
 		case Team::CT: return static_cast<std::size_t>(config->visuals.playerModelCT - 1) < models.size() ? models[config->visuals.playerModelCT - 1] : nullptr;
 		default: return nullptr;
 		}
 	};
 
-	if (const auto model = getModel(localPlayer->team()))
-	{
-		if (stage == FrameStage::RenderStart)
-		{
+	if (const auto model = getModel(localPlayer->getTeamNumber())) {
+		if (stage == FrameStage::NetUpdateEnd) {
 			originalIdx = localPlayer->modelIndex();
-			if (const auto modelprecache = interfaces->networkStringTableContainer->findTable("modelprecache"))
-			{
+			if (const auto modelprecache = interfaces->networkStringTableContainer->findTable("modelprecache")) {
 				modelprecache->addString(false, model);
 				const auto viewmodelArmConfig = memory->getPlayerViewmodelArmConfigForPlayerModel(model);
 				modelprecache->addString(false, viewmodelArmConfig[2]);
@@ -157,7 +250,6 @@ void Visuals::playerModel(FrameStage stage) noexcept
 			ragdoll->setModelIndex(idx);
 	}
 }
-
 void Visuals::colorWorld() noexcept
 {
 	if (!config->visuals.world.enabled && !config->visuals.sky.enabled && !config->visuals.props.enabled)
@@ -522,7 +614,7 @@ void Visuals::drawReloadProgress(ImDrawList* drawList) noexcept
 		drawList->PathStroke(color, false, config->visuals.reloadProgress.thickness);
 		std::ostringstream text;
 		text << std::fixed << std::showpoint << std::setprecision(1) << reloadTime << " s";
-		ImGuiCustom::drawText(drawList, NULL, NULL, color, color & IM_COL32_A_MASK, text.str().c_str(), ImGui::GetIO().DisplaySize / 2.0f);
+		ImGuiCustom::drawText(drawList, text.str().c_str(), ImGui::GetIO().DisplaySize / 2.0f, color, false, color & IM_COL32_A_MASK);
 	}
 	else {
 		reloadLength = 0.0f;
@@ -578,7 +670,7 @@ void Visuals::damageIndicator(GameEvent *event, ImDrawList* drawList) noexcept
 
 	const auto& pos = ImGui::GetIO().DisplaySize / 2.0f + ImVec2{ float(randX), float(randY) };
 	const auto color = Helpers::calculateColor(1.0f, 1.0f, 1.0f, 1.0f - timeSinceHit / config->visuals.damageIndicatorTime);
-	ImGuiCustom::drawText(drawList, NULL, NULL, color, color & IM_COL32_A_MASK, dmg.c_str(), pos);
+	ImGuiCustom::drawText(drawList, dmg.c_str(), pos, color, false, color & IM_COL32_A_MASK);
 }
 
 void Visuals::disablePostProcessing(FrameStage stage) noexcept

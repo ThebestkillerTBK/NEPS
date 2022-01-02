@@ -86,7 +86,6 @@ Memory::Memory() noexcept
 	WriteUsercmdDeltaToBufferReturn = *(reinterpret_cast<void**>(MemorySearch::findPattern("engine", "\x84\xC0\x74\x04\xB0\x01\xEB\x02\x32\xC0\x8B\xFE\x46\x3B\xF3\x7E\xC9\x84\xC0\x0F\x84????")));
 	WriteUsercmd = MemorySearch::findPattern("client", "\x55\x8B\xEC\x83\xE4\xF8\x51\x53\x56\x8B\xD9\x8B\x0D");
 
-	_updatePrecachedSounds = relativeToAbsolute<decltype(_updatePrecachedSounds)>(MemorySearch::findPattern("engine", "\x85\xC0\x75?\x8B\xCB\xE8????") + 7);
 	_setOrAddAttributeValueByName = relativeToAbsolute<decltype(_setOrAddAttributeValueByName)>(MemorySearch::findPattern("client", "\xE8????\x8B\x8D????\x85\xC9\x74\x10") + 1);
 
 	localPlayer.init(*reinterpret_cast<Entity ***>(MemorySearch::findPattern("client", "\xA1????\x89\x45\xBC\x85\xC0") + 1));

@@ -8,6 +8,8 @@ struct ImDrawList;
 
 namespace Visuals
 {
+    void runFreeCam(UserCmd* cmd) noexcept;
+    void freeCam(ViewSetup* setup) noexcept;
     void musicKit(FrameStage stage) noexcept;
     void playerModel(FrameStage stage) noexcept;
     void colorWorld() noexcept;

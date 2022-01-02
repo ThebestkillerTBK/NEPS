@@ -156,7 +156,7 @@ void GUI::render() noexcept
 
 	#ifdef NEPS_DEBUG
 	static Texture debugNotice = {IDB_PNG2, L"PNG"};
-	if (debugNotice.get())
+	if (config->misc.debugNotice && debugNotice.get())
 		ImGui::GetBackgroundDrawList()->AddImage(debugNotice.get(), {0, 0}, {256, 256});
 	#endif // NEPS_DEBUG
 
@@ -2044,6 +2044,17 @@ void GUI::renderVisualsWindow(bool contentOnly) noexcept
 		ImGui::EndPopup();
 	}
 
+	ImGuiCustom::keyBind("Freecam", config->visuals.freeCam);
+	ImGui::SameLine();
+	if (ImGui::ArrowButton("fc", ImGuiDir_Right))
+		ImGui::OpenPopup("##fc_edit");
+
+	if (ImGui::BeginPopup("##fc_edit"))
+	{
+		ImGui::SliderInt("", &config->visuals.freeCamSpeed, 1, 10, "Freecam speed: %d");
+		ImGui::EndPopup();
+	}
+
 	ImGuiCustom::keyBind("Flashlight", config->visuals.flashlight);
 	ImGui::SameLine();
 	if (ImGui::ArrowButton("flashlight", ImGuiDir_Right))
@@ -2309,7 +2320,7 @@ void GUI::renderSkinChangerWindow(bool contentOnly) noexcept
 			ImGui::InputTextWithHint("##nametag", "Name tag", selected_entry.custom_name, 32);
 
 			{
-				constexpr auto playerModels = "Default\0Special Agent Ava | FBI\0Operator | FBI SWAT\0Markus Delrow | FBI HRT\0Michael Syfers | FBI Sniper\0B Squadron Officer | SAS\0Seal Team 6 Soldier | NSWC SEAL\0Buckshot | NSWC SEAL\0Lt. Commander Ricksaw | NSWC SEAL\0Third Commando Company | KSK\0'Two Times' McCoy | USAF TACP\0Dragomir | Sabre\0Rezan The Ready | Sabre\0'The Doctor' Romanov | Sabre\0Maximus | Sabre\0Blackwolf | Sabre\0The Elite Mr. Muhlik | Elite Crew\0Ground Rebel | Elite Crew\0Osiris | Elite Crew\0Prof. Shahmat | Elite Crew\0Enforcer | Phoenix\0Slingshot | Phoenix\0Soldier | Phoenix\0Pirate\0Pirate Variant A\0Pirate Variant B\0Pirate Variant C\0Pirate Variant D\0Anarchist\0Anarchist Variant A\0Anarchist Variant B\0Anarchist Variant C\0Anarchist Variant D\0Balkan Variant A\0Balkan Variant B\0Balkan Variant C\0Balkan Variant D\0Balkan Variant E\0Jumpsuit Variant A\0Jumpsuit Variant B\0Jumpsuit Variant C\0Street Soldier | Phoenix\0'Blueberries' Buckshot | NSWC SEAL\0'Two Times' McCoy | TACP Cavalry\0Rezan the Redshirt | Sabre\0Dragomir | Sabre Footsoldier\0Cmdr. Mae 'Dead Cold' Jamison | SWAT\0 1st Lieutenant Farlow | SWAT\0John 'Van Healen' Kask | SWAT\0Bio-Haz Specialist | SWAT\0Sergeant Bombson | SWAT\0Chem-Haz Specialist | SWAT\0Sir Bloody Miami Darryl | The Professionals\0Sir Bloody Silent Darryl | The Professionals\0Sir Bloody Skullhead Darryl | The Professionals\0Sir Bloody Darryl Royale | The Professionals\0Sir Bloody Loudmouth Darryl | The Professionals\0Safecracker Voltzmann | The Professionals\0Little Kev | The Professionals\0Number K | The Professionals\0Getaway Sally | The Professionals\0";
+				constexpr auto playerModels = "Default\0Special Agent Ava | FBI\0Operator | FBI SWAT\0Markus Delrow | FBI HRT\0Michael Syfers | FBI Sniper\0B Squadron Officer | SAS\0Seal Team 6 Soldier | NSWC SEAL\0Buckshot | NSWC SEAL\0Lt. Commander Ricksaw | NSWC SEAL\0Third Commando Company | KSK\0'Two Times' McCoy | USAF TACP\0Dragomir | Sabre\0Rezan The Ready | Sabre\0'The Doctor' Romanov | Sabre\0Maximus | Sabre\0Blackwolf | Sabre\0The Elite Mr. Muhlik | Elite Crew\0Ground Rebel | Elite Crew\0Osiris | Elite Crew\0Prof. Shahmat | Elite Crew\0Enforcer | Phoenix\0Slingshot | Phoenix\0Soldier | Phoenix\0Pirate\0Pirate Variant A\0Pirate Variant B\0Pirate Variant C\0Pirate Variant D\0Anarchist\0Anarchist Variant A\0Anarchist Variant B\0Anarchist Variant C\0Anarchist Variant D\0Balkan Variant A\0Balkan Variant B\0Balkan Variant C\0Balkan Variant D\0Balkan Variant E\0Jumpsuit Variant A\0Jumpsuit Variant B\0Jumpsuit Variant C\0Street Soldier | Phoenix\0'Blueberries' Buckshot | NSWC SEAL\0'Two Times' McCoy | TACP Cavalry\0Rezan the Redshirt | Sabre\0Dragomir | Sabre Footsoldier\0Cmdr. Mae 'Dead Cold' Jamison | SWAT\0001st Lieutenant Farlow | SWAT\0John 'Van Healen' Kask | SWAT\0Bio-Haz Specialist | SWAT\0Sergeant Bombson | SWAT\0Chem-Haz Specialist | SWAT\0Sir Bloody Miami Darryl | The Professionals\0Sir Bloody Silent Darryl | The Professionals\0Sir Bloody Skullhead Darryl | The Professionals\0Sir Bloody Darryl Royale | The Professionals\0Sir Bloody Loudmouth Darryl | The Professionals\0Safecracker Voltzmann | The Professionals\0Little Kev | The Professionals\0Number K | The Professionals\0Getaway Sally | The Professionals\0";
 				const char* kits[] = { "CSGO", "CSGO2", "Crimson_Assault", "Sharpened", "Insurgency", "ADB", "High_Moon", "Deaths_Head_Demolition","Desert_Fire","LNOE","Metal",
 					"All_I_Want_for_Christmas","IsoRhythm","For_No_Mankind","Hotline_Miami","Total_Domination","The_Talos_Principle","Battlepack","MOLOTOV","Uber_Blasto_Phone",
 					"Hazardous_Environments","II-Headshot","The_8-Bit_Kit","I_Am","Diamonds","Invasion!","Lions_Mouth","Sponge_Fingerz","Disgusting","Java_Havana_Funkaloo",
@@ -2588,8 +2599,23 @@ void GUI::renderGriefingWindow(bool contentOnly) noexcept
 	}
 	ImGuiCustom::keyBind("Spam use", config->griefing.spamUse);
 
-	ImGuiCustom::keyBind("Basmala chat", config->griefing.chatBasmala);
-	ImGuiCustom::keyBind("Nuke chat", config->griefing.chatNuke);
+	ImGuiCustom::keyBind("Chat Spammer", config->griefing.chatSpammer.keyBind);
+	ImGui::SameLine();
+	if (ImGui::ArrowButton("chatspammer", ImGuiDir_Right))
+		ImGui::OpenPopup("##chatspammer");
+
+	if (ImGui::BeginPopup("##chatspammer"))
+	{
+		ImGui::Checkbox("Basmala chat", &config->griefing.chatSpammer.chatBasmala);
+		ImGui::Checkbox("Nuke chat", &config->griefing.chatSpammer.chatNuke);
+		ImGui::Checkbox("Custom", &config->griefing.chatSpammer.custom);
+		if (config->griefing.chatSpammer.custom)
+		{
+			ImGui::SetNextItemWidth(230.0f);
+			ImGui::InputText("##customspam", &config->griefing.chatSpammer.text);
+		}
+		ImGui::EndPopup();
+	}
 
 	ImGui::Checkbox("Auto disconnect", &config->griefing.autoDisconnect);
 
@@ -2686,7 +2712,6 @@ void GUI::renderMiscWindow(bool contentOnly) noexcept
 	ImGui::Checkbox("Fix bone matrices", &config->misc.fixBoneMatrices);
 	ImGui::Checkbox("Fix movement", &config->misc.fixMovement);
 	ImGui::Checkbox("Fix mouse delta", &config->misc.fixMouseDelta);
-	ImGui::Checkbox("Fix local animations", &config->misc.fixAnimation);
 	ImGui::Checkbox("Fix local animations", &config->misc.fixLocalAnimations);
 	ImGui::Checkbox("Disable model occlusion", &config->misc.disableModelOcclusion);
 	ImGui::Checkbox("Disable extrapolation", &config->misc.noExtrapolate);

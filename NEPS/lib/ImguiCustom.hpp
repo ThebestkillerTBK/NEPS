@@ -93,6 +93,7 @@ namespace ImGuiCustom
 	void StyleColors4(ImGuiStyle *dst = nullptr) noexcept;
 	void StyleColors5(ImGuiStyle *dst = nullptr) noexcept;
 	void StyleColors6(ImGuiStyle *dst = nullptr) noexcept;
+	void StyleSizesRounded(ImGuiStyle* dst = nullptr);
 
 	void textEllipsisInTableCell(const char* text) noexcept;
     void drawTriangleFromCenter(ImDrawList *drawList, const ImVec2 &pos, unsigned color, bool outline = true) noexcept;

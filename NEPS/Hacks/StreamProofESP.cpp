@@ -319,7 +319,7 @@ static void drawHealthBar(const HealthBarType& config, const ImVec2 &pos, float 
 	}
 
 
-	if (text.enabled)
+	if (text.enabled && !cullText(distance, cull))
 	{
 		const auto color = Helpers::calculateColor(text);
 		ImGuiCustom::drawText(drawList, std::to_string(health).c_str(), pos + ImVec2{width / 2, 0}, color, text.outline, color & IM_COL32_A_MASK, true, false);
@@ -548,7 +548,8 @@ static void drawOffscreen(const Color4OutlineToggleHealthBased &config, const Pl
 	const auto healthCol = Helpers::healthColor(std::clamp(health / 100.0f, 0.0f, 1.0f));
 	const auto color = Helpers::calculateColor(config);
 	ImGuiCustom::drawTriangleFromCenter(drawList, pos * 300, color, config.outline);
-	if (config.healthBased) ImGuiCustom::drawText(drawList, NULL, NULL, healthCol, healthCol & IM_COL32_A_MASK, std::to_string(health).c_str(), ImGui::GetIO().DisplaySize / 2 + pos * 300);
+	if (config.healthBased)
+		ImGuiCustom::drawText(drawList, std::to_string(health).c_str(), ImGui::GetIO().DisplaySize / 2 + pos * 300, healthCol, healthCol & IM_COL32_A_MASK);
 }
 
 static void drawLineOfSight(const Color4ToggleThickness &config, const PlayerData &playerData)

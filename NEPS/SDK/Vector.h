@@ -251,6 +251,38 @@ struct Vector
 					  0.0f};
 	}
 
+	static auto fromAngleAll(const Vector& angle, Vector* forward, Vector* right, Vector* up) noexcept
+	{
+		float sr = std::sin(Helpers::degreesToRadians(angle.z))
+			, sp = std::sin(Helpers::degreesToRadians(angle.x))
+			, sy = std::sin(Helpers::degreesToRadians(angle.y))
+			, cr = std::cos(Helpers::degreesToRadians(angle.z))
+			, cp = std::cos(Helpers::degreesToRadians(angle.x))
+			, cy = std::cos(Helpers::degreesToRadians(angle.y));
+
+		if (forward)
+		{
+			forward->x = cp * cy;
+			forward->y = cp * sy;
+			forward->z = -sp;
+		}
+
+		if (right)
+		{
+			right->x = (-1 * sr * sp * cy + -1 * cr * -sy);
+			right->y = (-1 * sr * sp * sy + -1 * cr * cy);
+			right->z = -1 * sr * cp;
+		}
+
+		if (up)
+		{
+			up->x = (cr * sp * cy + -sr * -sy);
+			up->y = (cr * sp * sy + -sr * cy);
+			up->z = cr * cp;
+		}
+	}
+
+
 	constexpr static auto up() noexcept
 	{
 		return Vector{0.0f, 0.0f, 1.0f};

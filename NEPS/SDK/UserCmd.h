@@ -17,6 +17,8 @@ struct UserCmd
 		Button_MoveRight = 1 << 10,
 		Button_Attack2 = 1 << 11,
 		Button_Score = 1 << 16,
+		Button_Walk = 1 << 18,
+		Button_Speed = 1 << 17,
 		Button_Zoom = 1 << 19,
 		Button_Bullrush = 1 << 22,
 		Button_Reload = 1 << 26

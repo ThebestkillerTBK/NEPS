@@ -212,6 +212,8 @@ public:
 		KeyBind thirdPerson;
 		int thirdpersonDistance = 150;
 		bool thirdpersonCollision = true;
+		KeyBind freeCam;
+		int freeCamSpeed = 2;
 		KeyBind flashlight;
 		float flashlightBrightness = 0.25f;
 		int flashlightDistance = 750;
@@ -396,10 +398,17 @@ public:
 		std::string killMessageString;
 		int banColor = 6;
 		std::string banText = "Cheater has been permanently banned from official CS:GO servers.";
-		KeyBind chatNuke;
-		KeyBind chatBasmala;
 		KeyBind spamUse;
 		bool autoDisconnect = false;
+
+		struct ChatSpammer
+		{
+			KeyBind keyBind;
+			bool chatNuke = false;
+			bool chatBasmala = false;
+			bool custom = false;
+			std::string text = "NEPS";
+		} chatSpammer;
 
 		struct Blockbot
 		{

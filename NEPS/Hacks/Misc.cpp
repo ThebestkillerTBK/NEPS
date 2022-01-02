@@ -94,6 +94,12 @@ void Misc::slowwalk(UserCmd *cmd) noexcept
 	}
 }
 
+void Misc::fastwalk(UserCmd* cmd) noexcept
+{
+	if (static Helpers::KeyBindState flag; flag[config->exploits.fastwalk])
+		return;
+}
+
 void Misc::updateClanTag() noexcept
 {
 	static std::string clanTag;
@@ -1051,21 +1057,21 @@ void Misc::fixMouseDelta(UserCmd* cmd) noexcept
 	delta_viewangles = cmd->viewangles;
 }
 
-void Misc::tweakPlayerAnimations(FrameStage stage) noexcept
+void Misc::tweakPlayerAnimations() noexcept
 {
 	if (!config->misc.fixAnimationLOD && !config->misc.resolveLby)
 		return;
 
 	for (int i = 1; i <= interfaces->engine->getMaxClients(); i++)
 	{
-		Entity *entity = interfaces->entityList->getEntity(i);
+		Entity* entity = interfaces->entityList->getEntity(i);
 
 		if (!entity || entity == localPlayer.get() || entity->isDormant() || !entity->isAlive()) continue;
 
 		if (config->misc.fixAnimationLOD)
 		{
-			*reinterpret_cast<int *>(entity + 0xA28) = 0;
-			*reinterpret_cast<int *>(entity + 0xA30) = memory->globalVars->frameCount;
+			*reinterpret_cast<int*>(entity + 0xA28) = 0;
+			*reinterpret_cast<int*>(entity + 0xA30) = memory->globalVars->frameCount;
 		}
 
 		if (config->misc.resolveLby)
@@ -2500,11 +2506,25 @@ void Misc::runChatSpammer() noexcept
 	constexpr auto nuke = "say \xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9\xE2\x80\xA9";
 	constexpr auto basmala = "say \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD \uFDFD";
 
-	if (static Helpers::KeyBindState flag; flag[config->griefing.chatNuke])
-		interfaces->engine->clientCmdUnrestricted(nuke);
+	if (static Helpers::KeyBindState flag; flag[config->griefing.chatSpammer.keyBind])
+	{
+		if (config->griefing.chatSpammer.chatNuke)
+			interfaces->engine->clientCmdUnrestricted(nuke);
+		
+		if (config->griefing.chatSpammer.chatBasmala)
+			interfaces->engine->clientCmdUnrestricted(basmala);
 
-	if (static Helpers::KeyBindState flag; flag[config->griefing.chatBasmala])
-		interfaces->engine->clientCmdUnrestricted(basmala);
+		if (config->griefing.chatSpammer.custom)
+		{
+			std::string cmd = "say \"";
+			cmd += config->griefing.chatSpammer.text;
+			cmd += '"';
+			interfaces->engine->clientCmdUnrestricted(cmd.c_str());
+		}
+			
+	}
+
+
 }
 
 void Misc::fakePrime() noexcept

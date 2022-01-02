@@ -220,11 +220,13 @@ static bool __stdcall createMove(float inputSampleTime, UserCmd *cmd) noexcept
 	Misc::fastStop(cmd);
 	Misc::autoStrafe(cmd);
 	Misc::autoJumpBug(cmd);
+	Visuals::runFreeCam(cmd);
 	Misc::bunnyHop(cmd);
 	Misc::fixMouseDelta(cmd);
 	Misc::prepareRevolver(cmd);
 	Aimbot::predictPeek(cmd);
 	if (static Helpers::KeyBindState flag; flag[config->exploits.slowwalk]) Misc::slowwalk(cmd);
+	Misc::fastwalk(cmd);
 	static void* oldPointer = nullptr;
 
 	auto network = interfaces->engine->getNetworkChannel();
@@ -291,7 +293,6 @@ static int __stdcall doPostScreenEffects(int param) noexcept
 {
 	if (interfaces->engine->isInGame())
 	{
-		Visuals::thirdperson();
 		Visuals::reduceFlashEffect();
 		Glow::render();
 	}
@@ -326,7 +327,7 @@ static void __stdcall drawModelExecute(void *context, void *state, const ModelRe
 
 static bool __fastcall svCheatsGetBool(void *thisptr) noexcept
 {
-	if (RETURN_ADDRESS == memory->cameraThink && config->visuals.thirdPerson.keyMode)
+	if (RETURN_ADDRESS == memory->cameraThink && (config->visuals.thirdPerson.keyMode || config->visuals.freeCam.keyMode))
 		return true;
 
 	return hooks->svCheats.getOriginal<bool, 13>()(thisptr);
@@ -381,6 +382,7 @@ static void __stdcall frameStageNotify(FrameStage stage) noexcept
 
 	if (interfaces->engine->isInGame())
 	{
+		Visuals::thirdperson();
 		Visuals::musicKit(stage);
 		Visuals::flashlight(stage);
 		Visuals::skybox(stage);
@@ -388,7 +390,7 @@ static void __stdcall frameStageNotify(FrameStage stage) noexcept
 		Visuals::removeGrass(stage);
 		Visuals::modifySmoke(stage);
 		Visuals::modifyFire(stage);
-		//Visuals::playerModel(stage);
+		Visuals::playerModel(stage);
 		Visuals::disablePostProcessing(stage);
 		Visuals::removeVisualRecoil(stage);
 		Backtrack::update(stage);
@@ -522,6 +524,7 @@ static void __stdcall overrideView(ViewSetup *setup) noexcept
 
 	setup->farZ = float(config->visuals.farZ * 10);
 	hooks->clientMode.callOriginal<void, 18>(setup);
+	Visuals::freeCam(setup);
 }
 
 struct RenderableInfo

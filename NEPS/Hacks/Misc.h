@@ -11,6 +11,7 @@ namespace Misc
 {
 	void edgeJump(UserCmd *cmd) noexcept;
 	void slowwalk(UserCmd *cmd) noexcept;
+	void fastwalk(UserCmd* cmd) noexcept;
 	void updateClanTag() noexcept;
 	void drawAutoPeek(ImDrawList* drawList) noexcept;
 	void quickPeek(UserCmd* cmd) noexcept;
@@ -36,9 +37,8 @@ namespace Misc
 	void fixMovement(UserCmd *cmd, float yaw) noexcept;
 	void soundESP() noexcept;
 	void antiAfkKick(UserCmd *cmd) noexcept;
-	void tweakPlayerAnimations() noexcept;
 	void fixMouseDelta(UserCmd* cmd) noexcept;
-	void tweakPlayerAnimations(FrameStage stage) noexcept;
+	void tweakPlayerAnimations() noexcept;
 	void autoPistol(UserCmd *cmd) noexcept;
 	void autoReload(UserCmd *cmd) noexcept;
 	void revealRanks(UserCmd *cmd) noexcept;
@@ -72,8 +72,6 @@ namespace Misc
 	void runChatSpammer() noexcept;
 	void fakePrime() noexcept;
 	void velocityGraph() noexcept;
-	void purchaseList(GameEvent *event = nullptr) noexcept;
-	void teamDamageList(GameEvent *event = nullptr);
 	void drawBombTimer() noexcept;
 	void indicators() noexcept;
 	void spectatorList() noexcept;

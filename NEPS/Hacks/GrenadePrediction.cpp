@@ -431,6 +431,10 @@ void NadePrediction::draw() noexcept
 		renderMutex.unlock();
 	}
 
+	if (interfaces->engine->isHLTV())
+		return;
+	
+
 	if (savedPoints.empty())
 		return;
 
