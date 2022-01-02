@@ -503,7 +503,7 @@ void Aimbot::run(UserCmd *cmd) noexcept
 
 		static auto lastTime = 0.0f;
 
-		if (target && targetAngle.notNull())
+		if (targetAngle.notNull())
 		{
 
 			if (lastKillTime + cfg.killDelay / 1000.0f > now)

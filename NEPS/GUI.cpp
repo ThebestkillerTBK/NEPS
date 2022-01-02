@@ -247,15 +247,9 @@ void GUI::updateColors() const noexcept
 	case 5: ImGuiCustom::StyleColors4(); break;
 	case 6: ImGuiCustom::StyleColors5(); break;
 	case 7: ImGuiCustom::StyleColors6(); break;
-	case 0: ImGuiCustom::StyleColorsClassic(); break;
-	case 1: ImGuiCustom::StyleColors1(); break;
-	case 2: ImGuiCustom::StyleColors2(); break;
-	case 3: ImGuiCustom::StyleColors3(); break;
-	case 4: ImGuiCustom::StyleColors4(); break;
-	case 5: ImGuiCustom::StyleColors5(); break;
-	case 6: ImGui::StyleColorsDark(); break;
-	case 7: ImGui::StyleColorsLight(); break;
-	case 8: ImGui::StyleColorsClassic(); break;
+	case 8: ImGui::StyleColorsDark(); break;
+	case 9: ImGui::StyleColorsLight(); break;
+	case 10: ImGui::StyleColorsClassic(); break;
 	}
 }
 
@@ -2597,18 +2591,6 @@ void GUI::renderGriefingWindow(bool contentOnly) noexcept
 	ImGuiCustom::keyBind("Basmala chat", config->griefing.chatBasmala);
 	ImGuiCustom::keyBind("Nuke chat", config->griefing.chatNuke);
 
-	ImGui::Checkbox("Team damage list", &config->griefing.teamDamageList.enabled);
-	ImGui::SameLine();
-
-	if (ImGui::ArrowButton("team_damage", ImGuiDir_Right))
-		ImGui::OpenPopup("##team_damage");
-
-	if (ImGui::BeginPopup("##team_damage"))
-	{
-		ImGui::Checkbox("No title bar", &config->griefing.teamDamageList.noTitleBar);
-		ImGui::EndPopup();
-	}
-
 	ImGui::Checkbox("Auto disconnect", &config->griefing.autoDisconnect);
 
 	if (!contentOnly)
@@ -2824,15 +2806,12 @@ void GUI::renderStyleWindow(bool contentOnly) noexcept
 		ImGui::Begin("Style", &window.style, windowFlags);
 	}
 
-	ImGui::PushItemWidth(100);
-	//if (ImGui::Combo("Menu style", &config->style.menuStyle, "Classic\0One window\0"))
-	//    window = {};
-	if (ImGui::Combo("Menu colors", &config->style.menuColors, "Custom\0NEPS\0Alwayslose\0Aimwhen\0Coca-Cola\0Twotap\0Cherry\0NEPSmas\0"))
 	#ifdef NEPS_DEBUG
 	if (ImGui::Combo("Menu style", &config->style.menuStyle, "Classic\0One window\0"))
 		window = {};
 	#endif
-	if (ImGui::Combo("Menu colors", &config->style.menuColors, "NEPS\0Alwayslose\0Aimwhen\0Coca-Cola\0Twotap\0Cherry\0Dark\0Light\0Classic\0Custom\0"))
+	ImGui::PushItemWidth(100);
+	if (ImGui::Combo("Menu colors", &config->style.menuColors, "Custom\0NEPS\0Alwayslose\0Aimwhen\0Coca-Cola\0Twotap\0Cherry\0NEPSmas\0Dark\0Light\0Classic\0"))
 		updateColors();
 	ImGui::PopItemWidth();
 	ImGui::SetNextItemWidth(90);

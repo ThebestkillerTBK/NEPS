@@ -141,6 +141,8 @@ void Backtrack::run(UserCmd *cmd) noexcept
 	{
 		memory->setAbsOrigin(bestTarget, bestRecord->origin);
 		cmd->tickCount = Helpers::timeToTicks(bestRecord->simulationTime + getLerp());
+
+		backtracked = true;
 	}
 }
 
@@ -184,8 +186,6 @@ void Backtrack::updateIncomingSequences() noexcept
 
 	while (sequences.size() > 2048)
 		sequences.pop_back();
-		backtracked = true;
-	}
 }
 
 bool Backtrack::lastShotLagRecord() noexcept
