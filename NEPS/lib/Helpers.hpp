@@ -75,6 +75,7 @@ namespace Helpers
 	int findDamage(const Vector &destination, const Vector &source, Entity *attacker, TraceFilter filter, Trace &trace, bool allowFriendlyFire = false, const Record *ghost = nullptr, int ghostHitbox = -1) noexcept;
 	int findDamage(const Vector &destination, const Vector &source, Entity *attacker, Trace &trace, bool allowFriendlyFire = false, const Record *ghost = nullptr, int ghostHitbox = -1) noexcept;
 	int findDamage(const Vector &destination, Entity *attacker, Trace &trace, bool allowFriendlyFire = false, const Record *ghost = nullptr, int ghostHitbox = -1) noexcept;
+	int findDamage(Entity *attacker, Entity *target, bool &occluded, bool allowFriendlyFire = false, float predictionFactor = 0.07f, const Record *ghost = nullptr) noexcept;
 
 	float findHitchance(float inaccuracy, float spread, float targetRadius, float distance) noexcept;
 
@@ -203,8 +204,6 @@ namespace Helpers
 	}
 
 	float approxRadius(const StudioBbox &hitbox, int i) noexcept;
-
-	bool animDataAuthenticity(Entity *animatable) noexcept;
 
 	template <typename T>
 	constexpr std::vector<T> join(const std::vector<T> &first, const std::vector<T> &second) noexcept

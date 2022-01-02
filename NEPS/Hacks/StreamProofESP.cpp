@@ -98,6 +98,16 @@ static std::vector<ImVec2> convexHull(std::vector<ImVec2> points) noexcept
 	return hull;
 }
 
+static bool cullText(float distance, float cullDistance) noexcept
+{
+	if (cullDistance > 0)
+		return distance > cullDistance;
+	else if (cullDistance < 0)
+		return distance < -cullDistance;
+
+	return false;
+}
+
 static void renderBox(const BoundingBox& bbox, const Box& config) noexcept
 {
 	if (!config.enabled)
@@ -259,24 +269,12 @@ static void drawSnapline(const Snapline &config, const ImVec2 &min, const ImVec2
 
 struct FontPush
 {
-	FontPush(const std::string &name, float distance)
+	FontPush(const std::string &name)
 	{
 		if (const auto it = config->getFonts().find(name); it != config->getFonts().end())
-		{
-			distance *= GameData::local().fov / 90.0f;
-
-			ImGui::PushFont([](const Config::Font &font, float dist)
-			{
-				if (dist <= 400.0f)
-					return font.big;
-				if (dist <= 1000.0f)
-					return font.medium;
-				return font.tiny;
-			}(it->second, distance));
-		} else
-		{
+			ImGui::PushFont(it->second.font);
+		else
 			ImGui::PushFont(nullptr);
-		}
 	}
 
 	~FontPush()
@@ -287,9 +285,6 @@ struct FontPush
 
 static void drawHealthBar(const HealthBarType& config, const ImVec2 &pos, float height, int health, const Color4OutlineToggle &healthBarConfig, const Color4OutlineToggle &text, float distance, float cull) noexcept
 {
-	const int originalHealth = health;
-	health = std::clamp(health, 0, 100);
-
 	constexpr float width = 3.0f;
 
 
@@ -327,7 +322,7 @@ static void drawHealthBar(const HealthBarType& config, const ImVec2 &pos, float 
 	if (text.enabled)
 	{
 		const auto color = Helpers::calculateColor(text);
-		ImGuiCustom::drawText(drawList, distance, cull, color, color & IM_COL32_A_MASK, std::to_string(originalHealth).c_str(), pos + ImVec2{0.0f, (100 - health) / 100.0f * height}, true, false);
+		ImGuiCustom::drawText(drawList, std::to_string(health).c_str(), pos + ImVec2{width / 2, 0}, color, text.outline, color & IM_COL32_A_MASK, true, false);
 	}
 }
 
@@ -345,20 +340,25 @@ static void renderPlayerBox(const PlayerData &playerData, const Player &config) 
 
 	ImVec2 offsetMins{}, offsetMaxs{};
 
-	FontPush font{config.font.name, playerData.distanceToLocal};
+	FontPush font{config.font.name};
 
 	drawHealthBar(config.healthBarType, bbox.min - ImVec2{5.0f, 0.0f}, (bbox.max.y - bbox.min.y), playerData.health, config.healthBar, config.health, playerData.distanceToLocal, config.textCullDistance);
 
-	if (config.name.enabled)
+	if (config.name.enabled && !cullText(playerData.distanceToLocal, config.textCullDistance))
 	{
 		const auto color = Helpers::calculateColor(config.name);
-		const auto nameSize = ImGuiCustom::drawText(drawList, playerData.distanceToLocal, config.textCullDistance, color, color & IM_COL32_A_MASK, playerData.name.c_str(), {(bbox.min.x + bbox.max.x) * 0.5f, bbox.min.y});
+		const auto nameSize = ImGuiCustom::drawText(drawList, playerData.name.c_str(), {(bbox.min.x + bbox.max.x) * 0.5f, bbox.min.y}, color, config.name.outline, color & IM_COL32_A_MASK);
 		offsetMins.y -= nameSize.y;
 	}
 
 	if (config.flags.enabled)
 	{
 		std::ostringstream flags;
+
+		#ifdef NEPS_DEBUG
+		if (playerData.chokedPackets)
+			flags << "CHK " << playerData.chokedPackets << "\n";
+		#endif // NEPS_DEBUG
 
 		if (playerData.isBot)
 			flags << "BOT\n";
@@ -371,14 +371,14 @@ static void renderPlayerBox(const PlayerData &playerData, const Player &config) 
 		if (playerData.ducking)
 			flags << "DUCK\n";
 		if (playerData.reloading)
-			flags << "RLD\n";
+			flags << "RELOAD\n";
 		if (playerData.armor)
-			flags << playerData.armor << "ap\n";
+			flags << "AMR " << playerData.armor << "\n";
 
-		if (!flags.str().empty())
+		if (!flags.str().empty() && !cullText(playerData.distanceToLocal, config.textCullDistance))
 		{
 			const auto color = Helpers::calculateColor(config.flags);
-			ImGuiCustom::drawText(drawList, playerData.distanceToLocal, config.textCullDistance, color, color & IM_COL32_A_MASK, flags.str().c_str(), {bbox.max.x + 1.0f, bbox.min.y}, false, false);
+			ImGuiCustom::drawText(drawList, flags.str().c_str(), {bbox.max.x + 1.0f, bbox.min.y}, color, config.flags.outline, color & IM_COL32_A_MASK, false, false);
 		}
 	}
 
@@ -397,10 +397,10 @@ static void renderPlayerBox(const PlayerData &playerData, const Player &config) 
 		offsetMins.y -= radius * 2.5f;
 	}
 
-	if (config.weapon.enabled && !playerData.activeWeapon.empty())
+	if (config.weapon.enabled && !playerData.activeWeapon.empty() && !cullText(playerData.distanceToLocal, config.textCullDistance))
 	{
 		const auto color = Helpers::calculateColor(config.weapon);
-		const auto weaponTextSize = ImGuiCustom::drawText(drawList, playerData.distanceToLocal, config.textCullDistance, color, color & IM_COL32_A_MASK, playerData.activeWeapon.c_str(), {(bbox.min.x + bbox.max.x) * 0.5f, bbox.max.y}, true, false);
+		const auto weaponTextSize = ImGuiCustom::drawText(drawList, playerData.activeWeapon.c_str(), {(bbox.min.x + bbox.max.x) * 0.5f, bbox.max.y}, color, config.weapon.outline, color & IM_COL32_A_MASK, true, false);
 		offsetMaxs.y += weaponTextSize.y;
 	}
 
@@ -417,19 +417,19 @@ static void renderWeaponBox(const WeaponData &weaponData, const Weapon &config) 
 	renderBox(bbox, config.box);
 	drawSnapline(config.snapline, bbox.min, bbox.max);
 
-	FontPush font{config.font.name, weaponData.distanceToLocal};
+	FontPush font{config.font.name};
 
-	if (config.name.enabled && !weaponData.displayName.empty())
+	if (config.name.enabled && !weaponData.displayName.empty() && !cullText(weaponData.distanceToLocal, config.textCullDistance))
 	{
 		const auto color = Helpers::calculateColor(config.name);
-		ImGuiCustom::drawText(drawList, weaponData.distanceToLocal, config.textCullDistance, color, color & IM_COL32_A_MASK, weaponData.displayName.c_str(), {(bbox.min.x + bbox.max.x) / 2, bbox.min.y});
+		ImGuiCustom::drawText(drawList, weaponData.displayName.c_str(), {(bbox.min.x + bbox.max.x) / 2, bbox.min.y}, color, config.name.outline, color & IM_COL32_A_MASK);
 	}
 
-	if (config.ammo.enabled && weaponData.clip != -1)
+	if (config.ammo.enabled && weaponData.clip != -1 && !cullText(weaponData.distanceToLocal, config.textCullDistance))
 	{
 		const auto color = Helpers::calculateColor(config.ammo);
 		const auto text{std::to_string(weaponData.clip) + " / " + std::to_string(weaponData.reserveAmmo)};
-		ImGuiCustom::drawText(drawList, weaponData.distanceToLocal, config.textCullDistance, color, color & IM_COL32_A_MASK, text.c_str(), {(bbox.min.x + bbox.max.x) / 2, bbox.max.y}, true, false);
+		ImGuiCustom::drawText(drawList, text.c_str(), {(bbox.min.x + bbox.max.x) / 2, bbox.max.y}, color, config.ammo.outline, color & IM_COL32_A_MASK, true, false);
 	}
 }
 
@@ -443,12 +443,12 @@ static void renderEntityBox(const BaseData &entityData, const char *name, const 
 	renderBox(bbox, config.box);
 	drawSnapline(config.snapline, bbox.min, bbox.max);
 
-	FontPush font{config.font.name, entityData.distanceToLocal};
+	FontPush font{config.font.name};
 
-	if (config.name.enabled)
+	if (config.name.enabled && !cullText(entityData.distanceToLocal, config.textCullDistance))
 	{
 		const auto color = Helpers::calculateColor(config.name);
-		ImGuiCustom::drawText(drawList, entityData.distanceToLocal, config.textCullDistance, color, color & IM_COL32_A_MASK, name, {(bbox.min.x + bbox.max.x) / 2, bbox.min.y - 5});
+		ImGuiCustom::drawText(drawList, name, {(bbox.min.x + bbox.max.x) / 2, bbox.min.y - 5}, color, config.name.outline, color & IM_COL32_A_MASK);
 	}
 }
 

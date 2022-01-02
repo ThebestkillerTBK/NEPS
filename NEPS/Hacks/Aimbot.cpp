@@ -100,8 +100,6 @@ void Aimbot::predictPeek(UserCmd *cmd) noexcept
 
 	constexpr auto predictionFactor = 0.07f;
 
-	const auto predictedEyePosition = localPlayer->getEyePosition() + localPlayer->velocity() * predictionFactor;
-
 	for (int i = 1; i <= interfaces->engine->getMaxClients(); i++)
 	{
 		auto entity = interfaces->entityList->getEntity(i);
@@ -113,36 +111,39 @@ void Aimbot::predictPeek(UserCmd *cmd) noexcept
 		if (!cfg.friendlyFire && !enemy)
 			continue;
 
-		Trace trace;
 		Record predictedGhost;
 		predictedGhost.hasHelmet = entity->hasHelmet();
 		predictedGhost.armor = entity->armor();
 
-		Vector origin = Vector{};
-		int damage = -1;
-		bool goesThroughWall = true;
+		bool occluded = true;
+		bool occludedBacktrack = true;
+		int damage = Helpers::findDamage(localPlayer.get(), entity, occluded, cfg.friendlyFire, predictionFactor);
 
-		// A subject to change
-		origin = entity->getBonePosition(8) + entity->velocity() * predictionFactor;
-		damage = Helpers::findDamage(origin, predictedEyePosition, localPlayer.get(), trace, cfg.friendlyFire, &predictedGhost, Hitbox_Head);
-		goesThroughWall = goesThroughWall && trace.startPos != predictedEyePosition;
+		const auto &records = Backtrack::getRecords(entity->index());
 
-		origin = entity->getBonePosition(0) + entity->velocity() * predictionFactor;
-		damage = std::max(damage, Helpers::findDamage(origin, predictedEyePosition, localPlayer.get(), trace, cfg.friendlyFire, &predictedGhost, Hitbox_Head));
-		goesThroughWall = goesThroughWall && trace.startPos != predictedEyePosition;
+		if (const auto it = std::find_if(records.rbegin(), records.rend(), [](const Record &record) noexcept { return Backtrack::valid(record.simulationTime); }); it != records.rend())
+			damage = std::max(damage, Helpers::findDamage(localPlayer.get(), entity, occludedBacktrack, cfg.friendlyFire, predictionFactor, &(*it)));
 
-		if (damage > 0 && trace.entity == entity && (!cfg.visibleOnly || !goesThroughWall))
+		if (damage > 0 && (!cfg.visibleOnly || !occluded || !occludedBacktrack))
 		{
 			if (cfg.autoScope && !localPlayer->isScoped() && activeWeapon->isSniperRifle())
 				cmd->buttons |= UserCmd::Button_Zoom;
 
 			if (cfg.autoStop && !activeWeapon->isKnife())
 				Misc::slowwalk(cmd);
+
+			break;
 		}
 	}
 }
 
-static __forceinline void chooseTarget(UserCmd *cmd) noexcept
+#define REAL_OVER_LAG_RECORD_ADVANTAGE 5
+#define DAMAGE_THRESHOLD_FRACTION 0.1f
+
+#ifndef NEPS_DEBUG
+__forceinline
+#endif
+void chooseTarget(UserCmd *cmd) noexcept
 {
 	const auto &cfg = Config::Aimbot::getRelevantConfig();
 
@@ -198,26 +199,16 @@ static __forceinline void chooseTarget(UserCmd *cmd) noexcept
 		}
 
 		const Record *backtrackRecord = nullptr;
-		if (config->backtrack.enabled)
+		if (config->backtrack.enabled && enemy)
 		{
-			Trace trace;
-			auto origin = bones[8].origin();
-			int damage = Helpers::findDamage(origin, localPlayer.get(), trace, cfg.friendlyFire);
-			const auto goesThroughWall = trace.startPos != localPlayerEyePosition;
+			const auto &records = Backtrack::getRecords(entity->index());
 
-			if (enemy)
-			{
-				const auto &records = Backtrack::getRecords(entity->index());
+			if (const auto it = std::find_if(records.rbegin(), records.rend(), [](const Record &record) noexcept { return Backtrack::valid(record.simulationTime); }); it != records.rend())
+				backtrackRecord = &(*it);
 
-				if (!Helpers::animDataAuthenticity(entity))
-					if (const auto it = std::find_if(records.begin(), records.end(), [](const Record &record) noexcept { return Backtrack::valid(record.simulationTime) && record.important; }); it != records.end())
-						backtrackRecord = &(*it);
-
-				//if (!backtrackRecord && goesThroughWall)
-				if (!backtrackRecord)
-					if (const auto it = std::find_if(records.begin(), records.end(), [](const Record &record) noexcept { return Backtrack::valid(record.simulationTime); }); it != records.end())
-						backtrackRecord = &(*it);
-			}
+			[[maybe_unused]] bool occluded = true;
+			if (Helpers::findDamage(localPlayer.get(), entity, occluded, cfg.friendlyFire, 0.0f) > Helpers::findDamage(localPlayer.get(), entity, occluded, cfg.friendlyFire, 0.0f, backtrackRecord) - REAL_OVER_LAG_RECORD_ADVANTAGE)
+				backtrackRecord = nullptr;
 
 			if (backtrackRecord)
 				std::copy(std::begin(backtrackRecord->bones), std::end(backtrackRecord->bones), bones.begin());
@@ -372,23 +363,24 @@ static __forceinline void chooseTarget(UserCmd *cmd) noexcept
 
 				Trace trace;
 				const auto damage = Helpers::findDamage(point, localPlayer.get(), trace, cfg.friendlyFire, backtrackRecord, hitboxIdx);
-				bool goesThroughWall = trace.startPos != localPlayerEyePosition;
+				bool occluded = trace.startPos != localPlayerEyePosition;
 
-				if (cfg.visibleOnly && goesThroughWall) continue;
+				if (cfg.visibleOnly && occluded) continue;
 
 				if (!backtrackRecord && trace.entity != entity) continue;
 
-				if (!goesThroughWall)
+				const int targetHealth = entity->health() + static_cast<int>(entity->health() * DAMAGE_THRESHOLD_FRACTION);
+				if (!occluded)
 				{
-					if (damage <= std::min(minDamage, entity->health()))
+					if (damage <= std::min(minDamage, targetHealth))
 						continue;
-					if (damage <= std::min(bestDamage, entity->health()))
+					if (damage <= std::min(bestDamage, targetHealth))
 						continue;
 				} else
 				{
-					if (damage <= std::min(minDamageAutoWall, entity->health()))
+					if (damage <= std::min(minDamageAutoWall, targetHealth))
 						continue;
-					if (damage <= std::min(bestDamage, entity->health()))
+					if (damage <= std::min(bestDamage, targetHealth))
 						continue;
 				}
 
@@ -498,12 +490,12 @@ void Aimbot::run(UserCmd *cmd) noexcept
 		if (cfg.scopedOnly && activeWeapon->isSniperRifle() && !localPlayer->isScoped() && !cfg.autoScope)
 			return;
 
+		chooseTarget(cmd);
+
 		static auto previousTargetHandle = targetHandle;
 
 		if (previousTargetHandle != targetHandle)
 			resetMissCounter();
-
-		chooseTarget(cmd);
 
 		static Vector aimVelocity = Vector{};
 

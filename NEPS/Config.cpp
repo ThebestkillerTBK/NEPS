@@ -792,6 +792,7 @@ static void from_json(const json &j, Config::Misc &m)
 	read(j, "Fix animation LOD", m.fixAnimationLOD);
 	read(j, "Fix bone matrix", m.fixBoneMatrices);
 	read(j, "Fix movement", m.fixMovement);
+	read(j, "Fix animations", m.fixLocalAnimations);
 	read(j, "Fix mouse delta", m.fixMouseDelta);
 	read(j, "Fix animations", m.fixAnimation);
 	read(j, "Disable model occlusion", m.disableModelOcclusion);
@@ -815,6 +816,7 @@ static void from_json(const json &j, Config::Misc &m)
 	read(j, "Grenade predict 2", m.nadePredict2);
 	read(j, "Mixed nade", m.mixedNade);
 	read(j, "Force relay cluster", m.forceRelayCluster);
+	read(j, "NEPSmas", m.goFestive);
 	read(j, "Aimstep", m.maxAngleDelta);
 	read<value_t::object>(j, "Preserve killfeed", m.preserveKillfeed);
 	read<value_t::object>(j, "Purchase list", m.purchaseList);
@@ -829,6 +831,7 @@ static void from_json(const json &j, Config::Misc &m)
 	read(j, "Debug Notice", m.debugNotice);
 	read(j, "All Cvar", m.allCvar);
 	read<value_t::object>(j, "Damage list", m.damageList);
+	read<value_t::object>(j, "Team damage list", m.teamDamageList);
 }
 
 static void from_json(const json &j, Config::Exploits &e)
@@ -839,7 +842,7 @@ static void from_json(const json &j, Config::Exploits &e)
 	read(j, "Fake duck packets", e.fakeDuckPackets);
 	read(j, "Moonwalk", e.moonwalk);
 	read<value_t::object>(j, "Slowwalk", e.slowwalk);
-	read<value_t::object>(j, "Doubletap", e.doubletap);
+	read<value_t::object>(j, "Fastwalk", e.fastwalk);
 	read(j, "Bypass sv_pure", e.bypassPure);
 }
 
@@ -864,12 +867,6 @@ static void from_json(const json &j, Config::Griefing &g)
 	read<value_t::object>(j, "Nuke chat", g.chatNuke);
 	read<value_t::object>(j, "Basmala chat", g.chatBasmala);
 	read(j, "Auto disconnect", g.autoDisconnect);
-}
-
-static void from_json(const json &j, Config::Griefing::TeamDamageList &tdl)
-{
-	read(j, "Enabled", tdl.enabled);
-	read(j, "No Title Bar", tdl.noTitleBar);
 }
 
 static void from_json(const json &j, Config::Griefing::Reportbot &r)
@@ -1375,6 +1372,12 @@ static void to_json(json& j, const Config::Misc::DamageList& o, const Config::Mi
 	WRITE("No Title Bar", noTitleBar);
 }
 
+static void to_json(json &j, const Config::Misc::TeamDamageList &o, const  Config::Misc::TeamDamageList &dummy = {})
+{
+	WRITE("Enabled", enabled);
+	WRITE("No Title Bar", noTitleBar);
+}
+
 static void to_json(json &j, const Config::Misc &o)
 {
 	const Config::Misc dummy = {};
@@ -1386,7 +1389,6 @@ static void to_json(json &j, const Config::Misc &o)
 	WRITE("Fix animation LOD", fixAnimationLOD);
 	WRITE("Fix bone matrix", fixBoneMatrices);
 	WRITE("Fix movement", fixMovement);
-	WRITE("Fix mouse delta", fixMouseDelta);
 	WRITE("Fix animations", fixAnimation);
 	WRITE("Disable model occlusion", disableModelOcclusion);
 	WRITE("Disable extrapolation", noExtrapolate);
@@ -1409,6 +1411,7 @@ static void to_json(json &j, const Config::Misc &o)
 	WRITE("Grenade predict 2", nadePredict2);
 	WRITE("Mixed nade", mixedNade);
 	WRITE("Force relay cluster", forceRelayCluster);
+	WRITE("NEPSmas", goFestive);
 	WRITE("Aimstep", maxAngleDelta);
 	WRITE("Preserve killfeed", preserveKillfeed);
 	WRITE("Purchase list", purchaseList);
@@ -1419,10 +1422,6 @@ static void to_json(json &j, const Config::Misc &o)
 	WRITE("KnifeBot", knifeBot);
 	WRITE("Status Bar", Sbar);
 	WRITE("Indicators", indicators);
-	WRITE("Player List", playerList);
-	WRITE("Debug Notice", debugNotice);
-	WRITE("All Cvar", allCvar);
-	WRITE("Damage list", damageList);
 }
 
 static void to_json(json &j, const Config::Exploits &o)
@@ -1435,14 +1434,8 @@ static void to_json(json &j, const Config::Exploits &o)
 	WRITE("Fake duck packets", fakeDuckPackets);
 	WRITE("Moonwalk", moonwalk);
 	WRITE("Slowwalk", slowwalk);
-	WRITE("Doubletap", doubletap);
+	WRITE("Fastwalk", fastwalk);
 	WRITE("Bypass sv_pure", bypassPure);
-}
-
-static void to_json(json &j, const Config::Griefing::TeamDamageList &o, const  Config::Griefing::TeamDamageList &dummy = {})
-{
-	WRITE("Enabled", enabled);
-	WRITE("No Title Bar", noTitleBar);
 }
 
 static void to_json(json &j, const Config::Griefing::Reportbot &o, const Config::Griefing::Reportbot &dummy = {})
@@ -1488,7 +1481,6 @@ static void to_json(json &j, const Config::Griefing &o)
 	WRITE("Blockbot", blockbot);
 	WRITE("Vote reveal", revealVotes);
 	WRITE("Spam use", spamUse);
-	WRITE("Team damage list", teamDamageList);
 	WRITE("Nuke chat", chatNuke);
 	WRITE("Basmala chat", chatBasmala);
 	WRITE("Auto disconnect", autoDisconnect);
@@ -1845,17 +1837,14 @@ bool Config::loadScheduledFonts() noexcept
 
 	for (const auto &fontName : scheduledFonts)
 	{
-		#define FONT_BIG 13.0f
-		#define FONT_MEDIUM 11.0f
-		#define FONT_TINY 9.0f
+		constexpr auto fontBig = 13.0f;
 
 		if (fontName == "Default")
 		{
 			if (fonts.find("Default") == fonts.cend())
 			{
 				Font newFont;
-				newFont.big = gui->getFont();
-				newFont.tiny = newFont.medium = newFont.big;
+				newFont.font = gui->getFont();
 
 				fonts.emplace(fontName, newFont);
 				result = true;
@@ -1875,13 +1864,12 @@ bool Config::loadScheduledFonts() noexcept
 			cfg.FontDataOwnedByAtlas = false;
 			cfg.OversampleH = cfg.OversampleV = 2;
 			cfg.PixelSnapH = false;
-			cfg.SizePixels = FONT_BIG;
+			cfg.SizePixels = fontBig;
 			if (cfg.Name[0] == '\0')
 				std::sprintf(cfg.Name, "ESP %s, %dpx", fontName.c_str(), static_cast<int>(cfg.SizePixels));
 
 			Font newFont;
-			newFont.big = ImGui::GetIO().Fonts->AddFontFromMemoryTTF(fontData.get(), fontDataSize, cfg.SizePixels, &cfg, Helpers::getFontGlyphRanges());
-			newFont.tiny = newFont.medium = newFont.big;
+			newFont.font = ImGui::GetIO().Fonts->AddFontFromMemoryTTF(fontData.get(), fontDataSize, cfg.SizePixels, &cfg, Helpers::getFontGlyphRanges());
 			fonts.emplace(fontName, newFont);
 			result = true;
 		}

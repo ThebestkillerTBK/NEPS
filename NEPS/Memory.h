@@ -97,7 +97,6 @@ public:
 	uintptr_t demoOrHLTV;
 	uintptr_t money;
 	uintptr_t demoFileEndReached;
-	uintptr_t audioSourceCache;
 	std::string* relayCluster;
 	void* WriteUsercmdDeltaToBufferReturn;
 	uintptr_t WriteUsercmd;
@@ -105,13 +104,7 @@ public:
 	void(__thiscall *createState)(AnimState *state, Entity *);
 	void(__vectorcall *updateState)(AnimState *state, void *, float z, float y, float x, void *);
 	void(__fastcall *invalidateBoneCache)(Entity *);
-	bool(__thiscall *_updatePrecachedSounds)(std::uintptr_t);
 	void(__thiscall *_setOrAddAttributeValueByName)(std::uintptr_t, const char *attribute);
-
-	bool updatePrecachedSounds() const noexcept
-	{
-		return _updatePrecachedSounds(audioSourceCache);
-	}
 
 	void setOrAddAttributeValueByName(std::uintptr_t attributeList, const char *attribute, float value) const noexcept
 	{

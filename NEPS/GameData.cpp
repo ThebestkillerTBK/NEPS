@@ -9,6 +9,7 @@
 #include "SDK/ModelRender.h"
 #include "SDK/NetworkChannel.h"
 #include "SDK/PlayerResource.h"
+#include "SDK/Radar.h"
 #include "SDK/Sound.h"
 #include "SDK/UtlVector.h"
 
@@ -32,6 +33,8 @@ static auto playerByHandleWritable(int handle) noexcept
 	const auto it = std::find_if(playerData.begin(), playerData.end(), [handle](const auto &playerData) { return playerData.handle == handle; });
 	return it != playerData.end() ? &(*it) : nullptr;
 }
+
+UtlVector<ActiveSoundInfo> activeSounds;
 
 void GameData::update() noexcept
 {
@@ -72,8 +75,8 @@ void GameData::update() noexcept
 	}
 	viewMatrix = interfaces->engine->worldToScreenMatrix();
 
-	const auto observerMode = localPlayer->getObserverMode();
-	const auto observerTarget = observerMode != ObsMode::Roaming && observerMode != ObsMode::Deathcam ? localPlayer->getObserverTarget() : nullptr;
+	const auto obsMode = localPlayer->getObserverMode();
+	const auto obsTarget = obsMode != ObsMode::Roaming && obsMode != ObsMode::Deathcam ? localPlayer->getObserverTarget() : nullptr;
 
 	for (int i = 1; i <= interfaces->entityList->getHighestEntityIndex(); ++i)
 	{
@@ -102,7 +105,7 @@ void GameData::update() noexcept
 			{
 				const auto obs = entity->getObserverTarget();
 				if (obs)
-					observerData.emplace_back(entity, obs, obs == localPlayer.get(), obs == observerTarget);
+					observerData.emplace_back(entity, obs, obs == localPlayer.get(), obs == obsTarget);
 			}
 		} else
 		{
@@ -164,6 +167,41 @@ void GameData::update() noexcept
 					break;
 				}
 
+			}
+		}
+	}
+
+	activeSounds.destructAll();
+	interfaces->engineSound->getActiveSounds(activeSounds);
+
+	for (auto &sound : activeSounds)
+	{
+		if (sound.soundSource < 1 || sound.soundSource > 64)
+			continue;
+
+		if (!sound.origin->notNull())
+			continue;
+
+		if (const auto entity = interfaces->entityList->getEntity(sound.soundSource); entity && entity->isPlayer())
+		{
+			if (auto player = playerByHandleWritable(entity->handle()); player)
+			{
+				player->becameDormant = memory->globalVars->realTime;
+				player->audible = true;
+
+				if (entity->isDormant())
+				{
+					const auto delta = *sound.origin - player->origin;
+					player->coordinateFrame.setOrigin(*sound.origin);
+					player->origin = *sound.origin;
+					player->headMaxs += delta;
+					player->headMins += delta;
+					for (auto &bone : player->bones)
+					{
+						bone.first += delta;
+						bone.second += delta;
+					}
+				}
 			}
 		}
 	}
@@ -308,8 +346,8 @@ void LocalPlayerData::update() noexcept
 		const auto collidable = obs->getCollideable();
 		if (collidable)
 		{
-			colMaxs = collidable->obbMaxs();
-			colMins = collidable->obbMins();
+			obbMaxs = collidable->obbMaxs();
+			obbMins = collidable->obbMins();
 		}
 	} else
 	{
@@ -331,8 +369,8 @@ void LocalPlayerData::update() noexcept
 		const auto collidable = localPlayer->getCollideable();
 		if (collidable)
 		{
-			colMaxs = collidable->obbMaxs();
-			colMins = collidable->obbMins();
+			obbMaxs = collidable->obbMaxs();
+			obbMins = collidable->obbMins();
 		}
 	}
 }
@@ -423,12 +461,12 @@ void PlayerData::update(Entity *entity) noexcept
 	handle = entity->handle();
 	name = entity->getPlayerName();
 	inViewFrustum = !interfaces->engine->cullBox(obbMins + origin, obbMaxs + origin);
+	audible = false;
 
 	if (entity->isDormant())
 	{
 		if (!dormant)
 			becameDormant = memory->globalVars->realTime;
-
 		dormant = true;
 		return;
 	}
@@ -452,21 +490,12 @@ void PlayerData::update(Entity *entity) noexcept
 	velocity = entity->velocity();
 	alive = entity->isAlive();
 
-	if (localPlayer)
-	{
-		enemy = localPlayer->isOtherEnemy(entity);
+	enemy = localPlayer->isOtherEnemy(entity);
+	if (localPlayer->isAlive() || localPlayer->observerMode() != ObsMode::InEye)
 		visible = alive && entity->visibleTo(localPlayer.get());
-	}
-
-	constexpr auto isEntityAudible = [](int entityIndex) noexcept
-	{
-		for (int i = 0; i < memory->activeChannels->count; ++i)
-			if (memory->channels[memory->activeChannels->list[i]].soundSource == entityIndex)
-				return true;
-		return false;
-	};
+	else if (const auto obs = localPlayer->getObserverTarget(); obs)
+		visible = alive && entity->visibleTo(obs);
 	
-	audible = isEntityAudible(entity->index());
 	spotted = entity->spotted();
 	health = entity->health();
 	armor = entity->armor();
@@ -482,6 +511,22 @@ void PlayerData::update(Entity *entity) noexcept
 	isVip = entity->isVip();
 	hasDefuser = entity->hasDefuser();
 	ducking = entity->flags() & PlayerFlag_Crouched;
+
+	if (previousUpdateTick != memory->globalVars->tickCount)
+	{
+		previousUpdateTick = memory->globalVars->tickCount;
+		lbyUpdate = entity->lbyUpdate(nextLbyUpdate);
+		if (entity->isChokingPackets())
+		{
+			if (chokedPackets < 0) chokedPackets = 0;
+			chokedPackets++;
+		}
+		else
+		{
+			if (chokedPackets > 0) chokedPackets = 0;
+			chokedPackets--;
+		}
+	}
 
 	{
 		const Vector start = entity->getEyePosition();
@@ -505,17 +550,9 @@ void PlayerData::update(Entity *entity) noexcept
 
 	if (const auto weapon = entity->getActiveWeapon())
 	{
-		audible = audible || isEntityAudible(weapon->index());
 		if (const auto weaponInfo = weapon->getWeaponData())
 			activeWeapon = interfaces->localize->findAsUTF8(weaponInfo->name);
 	}
-
-	const auto collidable = entity->getCollideable();
-	if (!collidable)
-		return;
-
-	colMaxs = collidable->obbMaxs();
-	colMins = collidable->obbMins();
 
 	if (!inViewFrustum) return;
 
@@ -728,6 +765,7 @@ void BombData::update() noexcept
 			return;
 		}
 	}
+	defuserHandle = bombsite = -1;
 	blowTime = 0.0f;
 }
 

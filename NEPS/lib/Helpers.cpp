@@ -332,6 +332,8 @@ float Helpers::handleBulletPenetration(SurfaceData *enterSurfaceData, const Trac
 
 int Helpers::findDamage(const Vector &destination, const Vector &source, Entity *attacker, TraceFilter filter, Trace &trace, bool allowFriendlyFire, const Record *ghost, int ghostHitbox) noexcept
 {
+	if (!attacker) return -1;
+
 	const auto activeWeapon = attacker->getActiveWeapon();
 	if (!activeWeapon)
 		return -1;
@@ -408,6 +410,50 @@ int Helpers::findDamage(const Vector &destination, const Vector &source, Entity 
 int Helpers::findDamage(const Vector &destination, Entity *attacker, Trace &trace, bool allowFriendlyFire, const Record *ghost, int ghostHitbox) noexcept
 {
 	return findDamage(destination, attacker->getEyePosition(), attacker, attacker, trace, allowFriendlyFire, ghost, ghostHitbox);
+}
+
+int Helpers::findDamage(Entity *attacker, Entity *target, bool &occluded, bool allowFriendlyFire, float predictionFactor, const Record *ghost) noexcept
+{
+	if (!target) return -1;
+
+	const auto model = target->getModel();
+	if (!model)
+		return -1;
+
+	const auto studioModel = interfaces->modelInfo->getStudioModel(model);
+	if (!studioModel)
+		return -1;
+
+	const auto set = studioModel->getHitboxSet(target->hitboxSet());
+	if (!set)
+		return -1;
+
+	const auto &boneMatrices = target->boneCache();
+	const auto targetDelta = target->velocity() * predictionFactor;
+	const auto eyePosition = attacker->getEyePosition() + attacker->velocity() * predictionFactor;
+
+	Record predictedGhost;
+	predictedGhost.hasHelmet = target->hasHelmet();
+	predictedGhost.armor = target->armor();
+
+	occluded = true;
+
+	int damage = -1;
+	for (const int boxNum : {Hitbox_Head, Hitbox_Belly, Hitbox_LowerChest})
+	{
+		const auto hitbox = set->getHitbox(boxNum);
+		if (!hitbox) continue;
+
+		Trace trace;
+		if (ghost)
+			damage = std::max(damage, findDamage(ghost->bones[hitbox->bone].origin(), eyePosition, attacker, trace, allowFriendlyFire, ghost, boxNum));
+		else
+			damage = std::max(damage, findDamage(boneMatrices[hitbox->bone].origin() + targetDelta, eyePosition, attacker, trace, allowFriendlyFire, &predictedGhost, boxNum));
+
+		if (trace.startPos == eyePosition) occluded = false;
+	}
+
+	return damage;
 }
 
 float Helpers::findHitchance(float inaccuracy, float spread, float targetRadius, float distance) noexcept
@@ -667,26 +713,6 @@ float Helpers::approxRadius(const StudioBbox &hitbox, int i) noexcept
 	}
 
 	return hitbox.capsuleRadius;
-}
-
-bool Helpers::animDataAuthenticity(Entity *animatable) noexcept
-{
-	if (!animatable)
-		return false;
-
-	if (!animatable->isPlayer())
-		return false;
-
-	if (animatable->moveType() == MoveType::Ladder) return true;
-	if (animatable->moveType() == MoveType::Noclip) return true;
-	if (animatable->isBot()) return true;
-	const float simulationTime = animatable->simulationTime();
-	const auto remoteActiveWeapon = animatable->getActiveWeapon();
-	if (remoteActiveWeapon && Helpers::timeToTicks(remoteActiveWeapon->lastShotTime()) == Helpers::timeToTicks(simulationTime)) return true;
-	const float oldSimulationTime = animatable->oldSimulationTime();
-	if (!std::abs(timeToTicks(simulationTime - oldSimulationTime) - 1)) return true;
-
-	return false;
 }
 
 std::string Helpers::decode(std::string in) noexcept

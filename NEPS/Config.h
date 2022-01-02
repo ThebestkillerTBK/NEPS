@@ -29,9 +29,7 @@ public:
 
 	struct Font
 	{
-		ImFont *tiny;
-		ImFont *medium;
-		ImFont *big;
+		ImFont *font;
 	};
 
 	struct Aimbot
@@ -368,7 +366,7 @@ public:
 	struct Style
 	{
 		int menuStyle = 0;
-		int menuColors = 0;
+		int menuColors = 1;
 		float scaling = 1.0f;
 		float rounding = 0.0f;
 	} style;
@@ -378,10 +376,10 @@ public:
 		KeyBind fakeDuck;
 		int fakeDuckPackets = 0;
 		KeyBind slowwalk;
+		KeyBind fastwalk;
 		bool moonwalk = false;
 		bool antiAfkKick = false;
 		bool fastDuck = false;
-		KeyBind doubletap;
 		bool bypassPure = true;
 	} exploits;
 
@@ -403,19 +401,13 @@ public:
 		KeyBind spamUse;
 		bool autoDisconnect = false;
 
-		struct TeamDamageList
-		{
-			bool enabled = false;
-			bool noTitleBar = false;
-		} teamDamageList;
-
 		struct Blockbot
 		{
 			KeyBind bind;
 			KeyBind target;
 			float trajectoryFac = 1.0f;
 			float distanceFac = 2.0f;
-			Color4OutlineToggleThickness visualize = {1.0f, 0.5f, 0.0f, 1.0f};
+			Color4ToggleThickness visualize = {1.0f, 0.5f, 0.0f, 1.0f};
 		} blockbot;
 
 		struct Reportbot
@@ -456,6 +448,7 @@ public:
 		bool fixMovement = true;
 		bool fixAnimation = true;
 		bool fixMouseDelta = true;
+		bool fixLocalAnimations = true;
 		bool disableModelOcclusion = true;
 		bool noExtrapolate = true;
 		bool disableIK = false;
@@ -501,11 +494,13 @@ public:
 		struct Indicators
 		{
 			bool enabled = false;
+			bool noTitleBar = false;
 		} indicators;
 
 		struct SpectatorList
 		{
 			bool enabled = false;
+			bool noTitleBar = false;
 		} spectatorList;
 
 		struct Watermark
@@ -532,6 +527,12 @@ public:
 			bool noTitleBar = false;
 		} damageList;
 
+		struct TeamDamageList
+		{
+			bool enabled = false;
+			bool noTitleBar = false;
+		} teamDamageList;
+
 		KeyBind prepareRevolver;
 		int selfNade = 0;
 		int quickHealthshotKey = 0;
@@ -552,6 +553,7 @@ public:
 		bool mixedNade = false;
 		int forceRelayCluster = 0;
 		bool allCvar = false;
+		bool goFestive = true;
 	} misc;
 
 	void scheduleFontLoad(const std::string &name) noexcept;

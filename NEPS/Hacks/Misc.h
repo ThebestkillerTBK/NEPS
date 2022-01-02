@@ -36,6 +36,7 @@ namespace Misc
 	void fixMovement(UserCmd *cmd, float yaw) noexcept;
 	void soundESP() noexcept;
 	void antiAfkKick(UserCmd *cmd) noexcept;
+	void tweakPlayerAnimations() noexcept;
 	void fixMouseDelta(UserCmd* cmd) noexcept;
 	void tweakPlayerAnimations(FrameStage stage) noexcept;
 	void autoPistol(UserCmd *cmd) noexcept;
@@ -70,4 +71,11 @@ namespace Misc
 	void forceRelayCluster() noexcept;
 	void runChatSpammer() noexcept;
 	void fakePrime() noexcept;
+	void velocityGraph() noexcept;
+	void purchaseList(GameEvent *event = nullptr) noexcept;
+	void teamDamageList(GameEvent *event = nullptr);
+	void drawBombTimer() noexcept;
+	void indicators() noexcept;
+	void spectatorList() noexcept;
+	void watermark() noexcept;
 }

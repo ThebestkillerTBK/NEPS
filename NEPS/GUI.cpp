@@ -5,6 +5,7 @@
 
 #include <shared_lib/imgui/imgui.h>
 #include <shared_lib/imgui/imgui_stdlib.h>
+#include <shared_lib/Texture/TextureDX9.h>
 
 #include "lib/ImguiCustom.hpp"
 #include "GUI.h"
@@ -12,6 +13,7 @@
 #include "Interfaces.h"
 #include "Hacks/Misc.h"
 
+#include "resource.h"
 #include "res_defaultfont.h"
 
 #include "SDK/ConVar.h"
@@ -19,10 +21,7 @@
 
 #ifdef NEPS_DEBUG
 #include "GameData.h"
-#include "resource.h"
 #include "Hacks/Animations.h"
-
-#include <shared_lib/Texture/TextureDX9.h>
 
 #include "SDK/Client.h"
 #include "SDK/ClientClass.h"
@@ -64,6 +63,7 @@ static ImFont* addFontFromVFONT(const std::string& path, float size, const ImWch
 GUI::GUI() noexcept
 {
 	ImGuiCustom::StyleColorsClassic();
+	ImGuiCustom::StyleSizesRounded();
 
 	ImGuiIO &io = ImGui::GetIO();
 	// We do be wanting to save window positions
@@ -152,13 +152,18 @@ void GUI::handleToggle() noexcept
 
 void GUI::render() noexcept
 {
+	ImGui::GetIO().FontGlobalScale = config->style.scaling;
+
 	#ifdef NEPS_DEBUG
 	static Texture debugNotice = {IDB_PNG2, L"PNG"};
-	if (debugNotice.get() && config->misc.debugNotice)
-		ImGui::GetBackgroundDrawList()->AddImage(debugNotice.get(), {0.0f, 0.0f}, {512.0f, 256.0f});
+	if (debugNotice.get())
+		ImGui::GetBackgroundDrawList()->AddImage(debugNotice.get(), {0, 0}, {256, 256});
 	#endif // NEPS_DEBUG
 
-	ImGui::GetIO().FontGlobalScale = config->style.scaling;
+	static float alpha = 0.0f;
+	static Texture festive = {IDB_PNG4, L"PNG"};
+	if (festive.get())
+		ImGui::GetBackgroundDrawList()->AddImage(festive.get(), {0, 0}, {ImGui::GetIO().DisplaySize.x, ImGui::GetIO().DisplaySize.x / 960 * 174}, {0, 0}, {1, 0.99f}, 0x00FFFFFF | (static_cast<unsigned>(alpha) << IM_COL32_A_SHIFT));
 
 	ImGuiStyle& style = ImGui::GetStyle();
 	style.WindowRounding = config->style.rounding;
@@ -167,6 +172,11 @@ void GUI::render() noexcept
 	style.GrabRounding = config->style.rounding;
 	style.PopupRounding = config->style.rounding;
 	style.ScrollbarRounding = config->style.rounding;
+
+	if (config->misc.goFestive && gui->open)
+		alpha = alpha * 0.9f + 255 * 0.1f;
+	else
+		alpha = alpha * 0.9f;
 
 	if (!open)
 		return;
@@ -230,6 +240,13 @@ void GUI::updateColors() const noexcept
 {
 	switch (config->style.menuColors)
 	{
+	case 1: ImGuiCustom::StyleColorsClassic(); break;
+	case 2: ImGuiCustom::StyleColors1(); break;
+	case 3: ImGuiCustom::StyleColors2(); break;
+	case 4: ImGuiCustom::StyleColors3(); break;
+	case 5: ImGuiCustom::StyleColors4(); break;
+	case 6: ImGuiCustom::StyleColors5(); break;
+	case 7: ImGuiCustom::StyleColors6(); break;
 	case 0: ImGuiCustom::StyleColorsClassic(); break;
 	case 1: ImGuiCustom::StyleColors1(); break;
 	case 2: ImGuiCustom::StyleColors2(); break;
@@ -738,8 +755,6 @@ void GUI::renderAimbotWindow(bool contentOnly) noexcept
 		ImGui::NextColumn();
 
 		ImGui::Checkbox("Multipoint", &config->aimbot[currentWeapon].multipoint);
-		if (ImGui::IsItemHovered())
-			ImGui::SetTooltip("About 15%% performance loss");
 
 		ImGui::PushItemWidth(-1);
 		ImGui::SliderFloat("##scale", &config->aimbot[currentWeapon].multipointScale, 0.5f, 1.0f, "Multipoint scale %.5f");
@@ -751,9 +766,9 @@ void GUI::renderAimbotWindow(bool contentOnly) noexcept
 		ImGui::InputFloat("Distance", &config->aimbot[currentWeapon].distance, 1.0f, 10.0f, "%.0fu");
 		config->aimbot[currentWeapon].distance = std::max(config->aimbot[currentWeapon].distance, 0.0f);
 
-		ImGui::SliderInt("##mindmg", &config->aimbot[currentWeapon].minDamage, 0, 100, "Min damage %d");
+		ImGui::SliderInt("##mindmg", &config->aimbot[currentWeapon].minDamage, 0, 110, "Min damage %d");
 		config->aimbot[currentWeapon].minDamage = std::max(config->aimbot[currentWeapon].minDamage, 0);
-		ImGui::SliderInt("##mindmg_aw", &config->aimbot[currentWeapon].minDamageAutoWall, 0, 100, "Min damage auto-wall %d");
+		ImGui::SliderInt("##mindmg_aw", &config->aimbot[currentWeapon].minDamageAutoWall, 0, 110, "Min damage auto-wall %d");
 		config->aimbot[currentWeapon].minDamageAutoWall = std::max(config->aimbot[currentWeapon].minDamageAutoWall, 0);
 
 		ImGuiCustom::keyBind("Override", config->aimbot[currentWeapon].aimbotOverride.bind);
@@ -929,7 +944,7 @@ void GUI::renderAntiAimWindow(bool contentOnly) noexcept
 
 		ImGui::SetNextItemWidth(90.0f);
 		ImGui::InputInt("Choked packets", &currentConfig.chokedPackets, 1, 5);
-		currentConfig.chokedPackets = std::clamp(currentConfig.chokedPackets, 0, 64);
+		currentConfig.chokedPackets = std::max(currentConfig.chokedPackets, 0);
 		ImGui::SameLine();
 		ImGuiCustom::keyBind("##choke", currentConfig.choke);
 
@@ -1274,9 +1289,9 @@ void GUI::renderTriggerbotWindow(bool contentOnly) noexcept
 		ImGui::SetNextItemWidth(90);
 		ImGui::InputFloat("Distance", &config->triggerbot[currentWeapon].distance, 1.0f, 10.0f, "%.0fu");
 		config->triggerbot[currentWeapon].distance = std::max(config->triggerbot[currentWeapon].distance, 0.0f);
-		ImGui::SliderInt("##mindmg", &config->triggerbot[currentWeapon].minDamage, 0, 100, "Min damage %d");
+		ImGui::SliderInt("##mindmg", &config->triggerbot[currentWeapon].minDamage, 0, 110, "Min damage %d");
 		config->triggerbot[currentWeapon].minDamage = std::max(config->triggerbot[currentWeapon].minDamage, 0);
-		ImGui::SliderInt("##mindmg_aw", &config->triggerbot[currentWeapon].minDamageAutoWall, 0, 100, "Min damage auto-wall %d");
+		ImGui::SliderInt("##mindmg_aw", &config->triggerbot[currentWeapon].minDamageAutoWall, 0, 110, "Min damage auto-wall %d");
 		config->triggerbot[currentWeapon].minDamageAutoWall = std::max(config->triggerbot[currentWeapon].minDamageAutoWall, 0);
 
 		ImGui::SliderFloat("##burst", &config->triggerbot[currentWeapon].burstTime, 0.0f, 1.0f, "Burst time %.3fs");
@@ -2049,7 +2064,7 @@ void GUI::renderVisualsWindow(bool contentOnly) noexcept
 	}
 
 	ImGui::SliderInt("##fov", &config->visuals.fov, 1, 170, "FOV %ddeg");
-	ImGui::Checkbox("Keep FOV when scoped", &config->visuals.forceFov);
+	ImGui::Checkbox("Maintain FOV when scoped", &config->visuals.forceFov);
 	ImGui::SliderInt("##far_z", &config->visuals.farZ, 0, 2500, "Far Z %d");
 	ImGui::SliderInt("##flash_red", &config->visuals.flashReduction, 0, 100, "Flash reduction %d%%");
 	ImGui::SliderFloat("##brightness", &config->visuals.brightness, 0.0f, 1.0f, "Brightness %.2f");
@@ -2483,12 +2498,12 @@ void GUI::renderExploitsWindow(bool contentOnly) noexcept
 	ImGuiCustom::keyBind("Fake duck", config->exploits.fakeDuck);
 	ImGui::SetNextItemWidth(-1);
 	ImGui::InputInt("##duck_packets", &config->exploits.fakeDuckPackets, 1, 5);
+	config->exploits.fakeDuckPackets = std::max(config->exploits.fakeDuckPackets, 0);
 	ImGui::Checkbox("Moonwalk", &config->exploits.moonwalk);
 	ImGuiCustom::keyBind("Slowwalk", config->exploits.slowwalk);
+	ImGuiCustom::keyBind("Fastwalk", config->exploits.fastwalk);
 
 	ImGui::Checkbox("Bypass sv_pure", &config->exploits.bypassPure);
-
-	//ImGuiCustom::keyBind("Doubletap", config->exploits.doubletap);
 
 	if (!contentOnly)
 		ImGui::End();
@@ -2569,12 +2584,12 @@ void GUI::renderGriefingWindow(bool contentOnly) noexcept
 
 	if (ImGui::BeginPopup("##blockbot"))
 	{
-		ImGuiCustom::keyBind("Target", config->griefing.blockbot.target);
+		ImGuiCustom::keyBind("Choose target", config->griefing.blockbot.target);
 		ImGui::PushItemWidth(192.0f);
 		ImGui::SliderFloat("##tfactor", &config->griefing.blockbot.trajectoryFac, 0.0f, 4.0f, "Trajectory factor %.3f");
 		ImGui::SliderFloat("##dfactor", &config->griefing.blockbot.distanceFac, 0.0f, 4.0f, "Distance factor %.3f");
 		ImGui::PopItemWidth();
-		ImGuiCustom::colorPicker("Visualize", config->griefing.blockbot.visualize);
+		ImGuiCustom::colorPicker("Visualize target", config->griefing.blockbot.visualize);
 		ImGui::EndPopup();
 	}
 	ImGuiCustom::keyBind("Spam use", config->griefing.spamUse);
@@ -2690,10 +2705,12 @@ void GUI::renderMiscWindow(bool contentOnly) noexcept
 	ImGui::Checkbox("Fix movement", &config->misc.fixMovement);
 	ImGui::Checkbox("Fix mouse delta", &config->misc.fixMouseDelta);
 	ImGui::Checkbox("Fix local animations", &config->misc.fixAnimation);
+	ImGui::Checkbox("Fix local animations", &config->misc.fixLocalAnimations);
 	ImGui::Checkbox("Disable model occlusion", &config->misc.disableModelOcclusion);
 	ImGui::Checkbox("Disable extrapolation", &config->misc.noExtrapolate);
 	ImGui::Checkbox("Disable IK", &config->misc.disableIK);
 	ImGui::Checkbox("Resolve LBY", &config->misc.resolveLby);
+	ImGui::Checkbox("NEPSmas (go festive)", &config->misc.goFestive);
 
 	ImGui::NextColumn();
 
@@ -2719,9 +2736,9 @@ void GUI::renderMiscWindow(bool contentOnly) noexcept
 
 	ImGui::SetNextItemWidth(-1);
 	ImGui::SliderFloat("##angle_delta", &config->misc.maxAngleDelta, 0.0f, 255.0f, "Aimstep %.2fdeg");
+
 	ImGui::Checkbox("Preserve killfeed", &config->misc.preserveKillfeed.enabled);
 	ImGui::SameLine();
-
 	if (ImGui::ArrowButton("killfeed", ImGuiDir_Right))
 		ImGui::OpenPopup("##killfeed");
 
@@ -2733,7 +2750,6 @@ void GUI::renderMiscWindow(bool contentOnly) noexcept
 
 	ImGui::Checkbox("Purchase list", &config->misc.purchaseList.enabled);
 	ImGui::SameLine();
-
 	if (ImGui::ArrowButton("purchases", ImGuiDir_Right))
 		ImGui::OpenPopup("##purchases");
 
@@ -2779,6 +2795,16 @@ void GUI::renderMiscWindow(bool contentOnly) noexcept
 	#ifdef NEPS_DEBUG
 		ImGui::Checkbox("Debug Notice", &config->misc.debugNotice);
 	#endif
+	ImGui::Checkbox("Team damage list", &config->misc.teamDamageList.enabled);
+	ImGui::SameLine();
+	if (ImGui::ArrowButton("team_damage", ImGuiDir_Right))
+		ImGui::OpenPopup("##team_damage");
+
+	if (ImGui::BeginPopup("##team_damage"))
+	{
+		ImGui::Checkbox("No title bar", &config->misc.teamDamageList.noTitleBar);
+		ImGui::EndPopup();
+	}
 
 	ImGui::Columns(1);
 
@@ -2799,6 +2825,9 @@ void GUI::renderStyleWindow(bool contentOnly) noexcept
 	}
 
 	ImGui::PushItemWidth(100);
+	//if (ImGui::Combo("Menu style", &config->style.menuStyle, "Classic\0One window\0"))
+	//    window = {};
+	if (ImGui::Combo("Menu colors", &config->style.menuColors, "Custom\0NEPS\0Alwayslose\0Aimwhen\0Coca-Cola\0Twotap\0Cherry\0NEPSmas\0"))
 	#ifdef NEPS_DEBUG
 	if (ImGui::Combo("Menu style", &config->style.menuStyle, "Classic\0One window\0"))
 		window = {};
@@ -2811,7 +2840,7 @@ void GUI::renderStyleWindow(bool contentOnly) noexcept
 	ImGui::SetNextItemWidth(90);
 	ImGui::SliderFloat("Rounding", &config->style.rounding, 0.0f, 12.0f, "%.2f");
 
-	if (config->style.menuColors == 9)
+	if (config->style.menuColors == 0)
 	{
 		ImGuiStyle &style = ImGui::GetStyle();
 		for (int i = 0; i < ImGuiCol_COUNT; ++i)
@@ -3070,12 +3099,7 @@ void GUI::renderDebugWindow() noexcept
 		if (entity && entity->isPlayer())
 		{
 			if (ImGui::Button("Resolve selected", {-1, 0}))
-				Animations::resolve(entity); 
-
-			if (Helpers::animDataAuthenticity(entity))
-				ImGui::TextUnformatted("Animations authentic");
-			else
-				ImGui::TextUnformatted("Desync possible");
+				Animations::resolveDesync(entity);
 		}
 
 		if (ImGui::Button("Precache info", {-1, 0}))
@@ -3267,8 +3291,6 @@ void GUI::renderDebugWindow() noexcept
 		{
 			if (const auto soundprecache = interfaces->networkStringTableContainer->findTable("soundprecache"))
 				soundprecache->addString(false, soundPath.c_str());
-
-			memory->updatePrecachedSounds();
 		}
 	}
 }

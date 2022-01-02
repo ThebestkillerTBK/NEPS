@@ -272,6 +272,8 @@ static bool __stdcall createMove(float inputSampleTime, UserCmd *cmd) noexcept
 
 	bool fakePitchPerformed = AntiAim::fakePitch(cmd);
 
+	Misc::prepareRevolver(cmd); // :)
+
 	previousViewAngles = cmd->viewangles;
 
 	previousSendPacket = sendPacket;
@@ -279,7 +281,7 @@ static bool __stdcall createMove(float inputSampleTime, UserCmd *cmd) noexcept
 
 	if (fakePitchPerformed)
 		cmd->viewangles.x = -89.0f; // Fake pitch visualization
-	Animations::desyncedAnimations(*cmd, sendPacket);
+	Animations::computeDesync(*cmd, sendPacket);
 	cmd->viewangles.x = previousViewAngles.x; // Restore view angles after visualizing fake pitch
 
 	return false;
@@ -367,10 +369,11 @@ static void __stdcall frameStageNotify(FrameStage stage) noexcept
 		break;
 	case FrameStage::RenderStart:
 		Misc::fakePrime();
-		Animations::fixAnimation(previousCmd, previousSendPacket);
+		Animations::syncLocal(previousCmd, previousSendPacket);
 		Misc::preserveKillfeed();
 		Visuals::colorWorld();
 		Misc::forceRelayCluster();
+		Misc::tweakPlayerAnimations();
 		break;
 	case FrameStage::RenderEnd:
 		break;
@@ -385,10 +388,9 @@ static void __stdcall frameStageNotify(FrameStage stage) noexcept
 		Visuals::removeGrass(stage);
 		Visuals::modifySmoke(stage);
 		Visuals::modifyFire(stage);
-		Visuals::playerModel(stage);
+		//Visuals::playerModel(stage);
 		Visuals::disablePostProcessing(stage);
 		Visuals::removeVisualRecoil(stage);
-		Misc::tweakPlayerAnimations(stage);
 		Backtrack::update(stage);
 		SkinChanger::run(stage);
 	}
@@ -425,7 +427,7 @@ static int __stdcall emitSound(SoundParams params) noexcept
 		ShowWindow(window, SW_RESTORE);
 	}
 	params.volume = std::clamp(params.volume, 0.0f, 1.0f);
-	return hooks->sound.callOriginal<int, 5>(params);
+	return hooks->engineSound.callOriginal<int, 5>(params);
 }
 
 static bool __stdcall shouldDrawFog() noexcept
@@ -525,7 +527,7 @@ static void __stdcall overrideView(ViewSetup *setup) noexcept
 struct RenderableInfo
 {
 	Entity *renderable;
-	std::byte pad[18];
+	PAD(18);
 	uint16_t flags;
 	uint16_t flags2;
 };
@@ -745,8 +747,8 @@ void Hooks::install() noexcept
 	panel.init(interfaces->panel);
 	panel.hookAt(41, paintTraverse);
 
-	sound.init(interfaces->sound);
-	sound.hookAt(5, emitSound);
+	engineSound.init(interfaces->engineSound);
+	engineSound.hookAt(5, emitSound);
 
 	surface.init(interfaces->surface);
 	surface.hookAt(15, setDrawColor);
@@ -823,7 +825,7 @@ void Hooks::uninstall() noexcept
 	clientMode.restore();
 	engine.restore();
 	modelRender.restore();
-	sound.restore();
+	engineSound.restore();
 	surface.restore();
 	svCheats.restore();
 	viewRender.restore();

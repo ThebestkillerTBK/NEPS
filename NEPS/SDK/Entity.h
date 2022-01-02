@@ -149,6 +149,7 @@ public:
 	VIRTUAL_METHOD(bool, isAlive, 156, (), (this))
 	VIRTUAL_METHOD(bool, isPlayer, 158, (), (this))
 	VIRTUAL_METHOD(bool, isWeapon, 166, (), (this))
+	VIRTUAL_METHOD(void, updateClientSideAnimation, 224, (), (this))
 	VIRTUAL_METHOD(int, getWeaponSubType, 282, (), (this))
 	VIRTUAL_METHOD(ObsMode, getObserverMode, 294, (), (this))
 	VIRTUAL_METHOD(Entity *, getObserverTarget, 295, (), (this))
@@ -159,16 +160,17 @@ public:
 	VIRTUAL_METHOD(int, getMuzzleAttachmentIndex3rdPerson, 469, (), (this))
 	VIRTUAL_METHOD(float, getInaccuracy, 483, (), (this))
 	VIRTUAL_METHOD(void, updateInaccuracyPenalty, 484, (), (this))
-	VIRTUAL_METHOD(void, updateClientSideAnimation, 224, (), (this))
 
-	Entity *getActiveWeapon() noexcept
-	{
-		return interfaces->entityList->getEntityFromHandle(activeWeapon());
-	}
+	Entity *getActiveWeapon() noexcept { return interfaces->entityList->getEntityFromHandle(activeWeapon()); }
 
 	Vector getEyePosition() noexcept
 	{
-		return getAbsOrigin() + viewOffset();
+		if (this == localPlayer.get())
+			return getAbsOrigin() + viewOffset();
+
+		Vector v;
+		VirtualMethod::call<void, 285>(this, std::ref(v));
+		return v;
 	}
 
 	Vector getAimPunch() noexcept
@@ -178,23 +180,11 @@ public:
 		return v;
 	}
 
-	UtlVector<Matrix3x4> &boneCache() noexcept
-	{
-		return *(UtlVector<Matrix3x4> *)((uintptr_t)this + 0x2914);
-	}
-	Vector getBonePosition(int bone) noexcept
-	{
-		return boneCache()[bone].origin();
-	}
+	UtlVector<Matrix3x4> &boneCache() noexcept { return *(UtlVector<Matrix3x4> *)((uintptr_t)this + 0x2914); }
+	Vector getBonePosition(int bone) noexcept { return boneCache()[bone].origin(); }
 
-	AnimLayer *animLayers() noexcept
-	{
-		return *reinterpret_cast<AnimLayer **>((uintptr_t)this + 0x2990);
-	}
-	int getAnimLayerCount() noexcept
-	{
-		return *reinterpret_cast<int *>((uintptr_t)this + 0x299C);
-	}
+	AnimLayer *animLayers() noexcept { return *reinterpret_cast<AnimLayer **>((uintptr_t)this + 0x2990); }
+	int getAnimLayerCount() noexcept { return *reinterpret_cast<int *>((uintptr_t)this + 0x299C); }
 
 	std::array<float, PoseParam_Count> &poseParams() noexcept
 	{
@@ -288,9 +278,26 @@ public:
 
 	bool isOtherEnemy(Entity *other) noexcept;
 
-	VarMap *getVarMap() noexcept
+	VarMap *getVarMap() noexcept { return reinterpret_cast<VarMap *>(this + 0x24); }
+
+	int isChokingPackets() noexcept { return simulationTime() == oldSimulationTime(); };
+
+	bool lbyUpdate(float &nextUpdate) noexcept
 	{
-		return reinterpret_cast<VarMap *>(this + 0x24);
+		if (!isPlayer())
+			return false;
+
+		const auto time = memory->globalVars->serverTime();
+
+		if (velocity().length2D() > 0.1f || std::fabsf(velocity().z) > 100.0f)
+			nextUpdate = time + 0.22f;
+		else if (time >= nextUpdate)
+		{
+			nextUpdate = time + 1.1f;
+			return true;
+		}
+
+		return false;
 	}
 
 	NETVAR_OFFSET(getAnimstate, "CCSPlayer", "m_bIsScoped", -20, AnimState*)
@@ -386,25 +393,13 @@ public:
 	bool canSee(Entity *other, const Vector &pos) noexcept;
 	bool visibleTo(Entity *other) noexcept;
 
-	bool grenadeExploded() noexcept
-	{
-		return *reinterpret_cast<bool *>(this + 0x29E8);
-	}
+	bool grenadeExploded() noexcept { return *reinterpret_cast<bool *>(this + 0x29E8); }
 
-	bool isFlashed() noexcept
-	{
-		return flashDuration() > 75.0f;
-	}
+	bool isFlashed() noexcept { return flashDuration() > 75.0f; }
 
-	int &effectFlags() noexcept
-	{
-		return *reinterpret_cast<int *>(this + 0xF0);
-	}
+	int &effectFlags() noexcept { return *reinterpret_cast<int *>(this + 0xF0); }
 
-	int &shouldSkipFrame() noexcept
-	{
-		return *reinterpret_cast<int *>(this + 0xA68);
-	}
+	int &shouldSkipFrame() noexcept { return *reinterpret_cast<int *>(this + 0xA68); }
 
 	NETVAR(clientAnimations, "CBaseAnimating", "m_bClientSideAnimation", bool)
 	NETVAR(body, "CBaseAnimating", "m_nBody", int)

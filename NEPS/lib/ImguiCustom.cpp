@@ -157,7 +157,7 @@ void ImGuiCustom::progressBarFullWidth(float fraction, float height) noexcept
 	const ImGuiStyle &style = g.Style;
 
 	ImVec2 pos = window->DC.CursorPos;
-	ImVec2 size = ImGui::CalcItemSize(ImVec2{-1, 0}, ImGui::CalcItemWidth(), std::max(height, style.FrameRounding * 2.0f));
+	ImVec2 size = ImGui::CalcItemSize(ImVec2{-1, 0}, ImGui::CalcItemWidth(), std::max(height, style.FrameRounding * 2));
 	ImRect bb(pos, pos + size);
 	ImGui::ItemSize(size, style.FramePadding.y);
 	if (!ImGui::ItemAdd(bb, 0))
@@ -210,12 +210,12 @@ void ImGuiCustom::keyBind(const char *name, int *key, int *keyMode) noexcept
 		{
 			if (*keyMode == 1)
 			{
-				ImGui:: PushStyleColor(ImGuiCol_Text, ImGui::GetColorU32(ImGuiCol_TextDisabled));
+				ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetColorU32(ImGuiCol_TextDisabled));
 				ImGui::ButtonEx("On", {}, ImGuiButtonFlags_Disabled);
 				ImGui::PopStyleColor();
 			} else if (*keyMode == 0)
 			{
-				ImGui:: PushStyleColor(ImGuiCol_Text, ImGui::GetColorU32(ImGuiCol_TextDisabled));
+				ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetColorU32(ImGuiCol_TextDisabled));
 				ImGui::ButtonEx("Off", {}, ImGuiButtonFlags_Disabled);
 				ImGui::PopStyleColor();
 			} else if (*key)
@@ -228,8 +228,13 @@ void ImGuiCustom::keyBind(const char *name, int *key, int *keyMode) noexcept
 					ImGui::SetActiveID(ImGui::GetID(name), ImGui::GetCurrentWindow());
 			}
 
-			if (ImGui::IsItemHovered() && ImGui::GetIO().MouseClicked[1])
-				ImGui::OpenPopup("##mode");
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetTooltip("Right click for options");
+
+				if (ImGui::GetIO().MouseClicked[1])
+					ImGui::OpenPopup("##mode");
+			}
 
 			if (ImGui::BeginPopup("##mode", ImGuiWindowFlags_AlwaysUseWindowPadding))
 			{
@@ -261,8 +266,13 @@ void ImGuiCustom::keyBind(const char *name, int *key, int *keyMode) noexcept
 					ImGui::SetActiveID(ImGui::GetID(name), ImGui::GetCurrentWindow());
 			}
 
-			if (ImGui::IsItemHovered() && ImGui::GetIO().MouseClicked[1])
-				*key = 0;
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetTooltip("Right click to unset");
+
+				if (ImGui::GetIO().MouseClicked[1])
+					*key = 0;
+			}
 		}
 	}
 	ImGui::SameLine();
@@ -691,7 +701,113 @@ void ImGuiCustom::StyleColors5(ImGuiStyle *dst) noexcept
 	colors[ImGuiCol_ModalWindowDimBg] = {0.20f, 0.20f, 0.20f, 0.35f};
 }
 
-void ImGuiCustom::drawTriangleFromCenter(ImDrawList *drawList, const ImVec2 &pos, unsigned int color, bool outline) noexcept
+void ImGuiCustom::StyleColors6(ImGuiStyle *dst) noexcept
+{
+	ImGuiStyle *style = dst ? dst : &ImGui::GetStyle();
+	ImVec4 *colors = style->Colors;
+
+	colors[ImGuiCol_Text] = {1.00f, 1.00f, 1.00f, 1.00f};
+	colors[ImGuiCol_TextTitle] = {1.00f, 1.00f, 1.00f, 1.00f};
+	colors[ImGuiCol_TextDisabled] = {1.00f, 1.00f, 1.00f, 0.37f};
+	colors[ImGuiCol_WindowBg] = {0.14f, 0.25f, 0.08f, 0.92f};
+	colors[ImGuiCol_ChildBg] = {0.00f, 0.00f, 0.00f, 0.00f};
+	colors[ImGuiCol_PopupBg] = {0.14f, 0.25f, 0.08f, 0.92f};
+	colors[ImGuiCol_Border] = {1.00f, 0.98f, 0.00f, 0.40f};
+	colors[ImGuiCol_BorderShadow] = {0.00f, 0.00f, 0.00f, 0.28f};
+	colors[ImGuiCol_FrameBg] = {1.00f, 0.16f, 0.06f, 0.47f};
+	colors[ImGuiCol_FrameBgHovered] = {1.00f, 0.42f, 0.06f, 0.65f};
+	colors[ImGuiCol_FrameBgActive] = {1.00f, 0.42f, 0.06f, 1.00f};
+	colors[ImGuiCol_TitleBg] = {1.00f, 0.16f, 0.06f, 0.47f};
+	colors[ImGuiCol_TitleBgActive] = {1.00f, 0.16f, 0.06f, 1.00f};
+	colors[ImGuiCol_TitleBgCollapsed] = {1.00f, 0.16f, 0.06f, 0.47f};
+	colors[ImGuiCol_MenuBarBg] = {0.29f, 0.03f, 0.00f, 1.00f};
+	colors[ImGuiCol_ScrollbarBg] = {1.00f, 0.42f, 0.06f, 0.41f};
+	colors[ImGuiCol_ScrollbarGrab] = {1.00f, 0.81f, 0.06f, 0.38f};
+	colors[ImGuiCol_ScrollbarGrabHovered] = {1.00f, 0.81f, 0.06f, 0.68f};
+	colors[ImGuiCol_ScrollbarGrabActive] = {1.00f, 0.81f, 0.06f, 1.00f};
+	colors[ImGuiCol_CheckMark] = {1.00f, 0.81f, 0.06f, 1.00f};
+	colors[ImGuiCol_SliderGrab] = {1.00f, 0.81f, 0.06f, 0.38f};
+	colors[ImGuiCol_SliderGrabActive] = {1.00f, 0.81f, 0.06f, 1.00f};
+	colors[ImGuiCol_Button] = {1.00f, 0.16f, 0.06f, 0.47f};
+	colors[ImGuiCol_ButtonHovered] = {1.00f, 0.42f, 0.06f, 0.65f};
+	colors[ImGuiCol_ButtonActive] = {1.00f, 0.81f, 0.06f, 1.00f};
+	colors[ImGuiCol_Header] = {1.00f, 0.16f, 0.06f, 0.47f};
+	colors[ImGuiCol_HeaderHovered] = {1.00f, 0.42f, 0.06f, 0.65f};
+	colors[ImGuiCol_HeaderActive] = {1.00f, 0.81f, 0.06f, 0.68f};
+	colors[ImGuiCol_Separator] = {0.00f, 0.00f, 0.00f, 0.23f};
+	colors[ImGuiCol_SeparatorHovered] = {1.00f, 1.00f, 1.00f, 1.00f};
+	colors[ImGuiCol_SeparatorActive] = {0.67f, 0.67f, 0.67f, 1.00f};
+	colors[ImGuiCol_ResizeGrip] = {1.00f, 0.16f, 0.06f, 0.47f};
+	colors[ImGuiCol_ResizeGripHovered] = {1.00f, 0.42f, 0.06f, 0.65f};
+	colors[ImGuiCol_ResizeGripActive] = {1.00f, 0.81f, 0.06f, 1.00f};
+	colors[ImGuiCol_Tab] = {0.34f, 0.34f, 0.68f, 0.79f};
+	colors[ImGuiCol_TabHovered] = {0.45f, 0.45f, 0.90f, 0.80f};
+	colors[ImGuiCol_TabActive] = {0.40f, 0.40f, 0.73f, 0.84f};
+	colors[ImGuiCol_TabUnfocused] = {0.28f, 0.28f, 0.57f, 0.82f};
+	colors[ImGuiCol_TabUnfocusedActive] = {0.35f, 0.35f, 0.65f, 0.84f};
+	colors[ImGuiCol_PlotLines] = {1.00f, 0.00f, 0.00f, 1.00f};
+	colors[ImGuiCol_PlotLinesHovered] = {1.00f, 0.00f, 0.00f, 1.00f};
+	colors[ImGuiCol_PlotHistogram] = {1.00f, 0.81f, 0.06f, 1.00f};
+	colors[ImGuiCol_PlotHistogramHovered] = {1.00f, 0.00f, 0.00f, 1.00f};
+	colors[ImGuiCol_TableHeaderBg] = {0.00f, 0.00f, 0.00f, 0.00f};
+	colors[ImGuiCol_TableBorderStrong] = {0.00f, 0.00f, 0.00f, 0.00f};
+	colors[ImGuiCol_TableBorderLight] = {0.00f, 0.00f, 0.00f, 0.00f};
+	colors[ImGuiCol_TableRowBg] = {0.00f, 0.00f, 0.00f, 0.00f};
+	colors[ImGuiCol_TableRowBgAlt] = {0.00f, 0.00f, 0.00f, 0.00f};
+	colors[ImGuiCol_TextSelectedBg] = {0.06f, 0.17f, 0.00f, 0.79f};
+	colors[ImGuiCol_DragDropTarget] = {1.00f, 0.81f, 0.06f, 1.00f};
+	colors[ImGuiCol_NavHighlight] = {0.45f, 0.45f, 0.90f, 0.80f};
+	colors[ImGuiCol_NavWindowingHighlight] = {1.00f, 1.00f, 1.00f, 0.70f};
+	colors[ImGuiCol_NavWindowingDimBg] = {0.80f, 0.80f, 0.80f, 0.20f};
+	colors[ImGuiCol_ModalWindowDimBg] = {0.20f, 0.20f, 0.20f, 0.35f};
+}
+
+void ImGuiCustom::StyleSizesRounded(ImGuiStyle *dst)
+{
+	ImGuiStyle *style = dst ? dst : &ImGui::GetStyle();
+
+	style->WindowPadding = ImVec2(4, 4);
+	style->FramePadding = ImVec2(3, 2);
+	style->CellPadding = ImVec2(4, 2);
+	style->TouchExtraPadding = ImVec2(0, 0);
+	style->DisplayWindowPadding = ImVec2(19, 19);
+	style->DisplaySafeAreaPadding = ImVec2(2, 2);
+	style->ItemSpacing = ImVec2(4, 3);
+	style->ItemInnerSpacing = ImVec2(3, 2);
+	style->WindowMinSize = ImVec2(32, 32);
+	style->WindowTitleAlign = ImVec2(0.0f, 0.5f);
+	style->ButtonTextAlign = ImVec2(0.5f, 0.5f);
+	style->SelectableTextAlign = ImVec2(0.0f, 0.0f);
+	style->WindowMenuButtonPosition = ImGuiDir_Left;
+	style->ColorButtonPosition = ImGuiDir_Right;
+	style->Alpha = 1.0f;
+	style->WindowRounding = 8.0f;
+	style->ChildRounding = 4.0f;
+	style->PopupRounding = 4.0f;
+	style->FrameRounding = 4.0f;
+	style->GrabRounding = 2.0f;
+	style->TabRounding = 4.0f;
+	style->ScrollbarRounding = 4.0f;
+	style->WindowBorderSize = 1.0f;
+	style->ChildBorderSize = 1.0f;
+	style->PopupBorderSize = 1.0f;
+	style->FrameBorderSize = 1.0f;
+	style->TabBorderSize = 1.0f;
+	style->IndentSpacing = 21.0f;
+	style->ColumnsMinSpacing = 6.0f;
+	style->ScrollbarSize = 10.0f;
+	style->GrabMinSize = 5.0f;
+	style->LogSliderDeadzone = 4.0f;
+	style->TabMinWidthForCloseButton = 0.0f;
+	style->MouseCursorScale = 1.0f;
+	style->AntiAliasedLines = true;
+	style->AntiAliasedLinesUseTex = true;
+	style->AntiAliasedFill = true;
+	style->CurveTessellationTol = 1.25f;
+	style->CircleTessellationMaxError = 0.30f;
+}
+
+void ImGuiCustom::drawTriangleFromCenter(ImDrawList *drawList, const ImVec2 &pos, unsigned color, bool outline) noexcept
 {
 	const auto l = std::sqrtf(ImLengthSqr(pos));
 	if (!l) return;
@@ -709,30 +825,47 @@ void ImGuiCustom::drawTriangleFromCenter(ImDrawList *drawList, const ImVec2 &pos
 		drawList->AddPolyline(trianglePoints, 3, color | IM_COL32_A_MASK, ImDrawFlags_Closed, 1.5f);
 }
 
-ImVec2 ImGuiCustom::drawText(ImDrawList *drawList, float distance, float cullDistance, unsigned int textColor, unsigned int borderColor, const char *text, const ImVec2 &pos, bool centered, bool adjustHeight, bool meters) noexcept
+ImVec2 ImGuiCustom::drawText(ImDrawList *drawList, const char *text, const ImVec2 &pos, unsigned textColor, bool outline, unsigned outlineColor, bool centered, bool adjustHeight) noexcept
 {
-	//if (!(borderColor & IM_COL32_A_MASK) && !(textColor & IM_COL32_A_MASK))
-	if (!meters) 
-	{
-		if (cullDistance > 0 && distance > cullDistance)
-			return {};
-	} else if (cullDistance > 0 && Helpers::metersToUnits(distance) > cullDistance)
+	if (!(outlineColor & IM_COL32_A_MASK) && !(textColor & IM_COL32_A_MASK))
 		return {};
 
 	const auto textSize = ImGui::CalcTextSize(text);
 	const auto horizontalOffset = centered ? textSize.x / 2 : 0.0f;
 	const auto verticalOffset = adjustHeight ? textSize.y : 0.0f;
 
-	if (borderColor & IM_COL32_A_MASK)
+	if (outline && outlineColor & IM_COL32_A_MASK)
 	{
-		drawList->AddText({pos.x - horizontalOffset, pos.y - verticalOffset - 1.0f}, borderColor, text);
-		drawList->AddText({pos.x - horizontalOffset, pos.y - verticalOffset + 1.0f}, borderColor, text);
-		drawList->AddText({pos.x - horizontalOffset - 1.0f, pos.y - verticalOffset}, borderColor, text);
-		drawList->AddText({pos.x - horizontalOffset + 1.0f, pos.y - verticalOffset}, borderColor, text);
+		drawList->AddText({pos.x - horizontalOffset, pos.y - verticalOffset - 1}, outlineColor, text);
+		drawList->AddText({pos.x - horizontalOffset, pos.y - verticalOffset + 1}, outlineColor, text);
+		drawList->AddText({pos.x - horizontalOffset - 1, pos.y - verticalOffset}, outlineColor, text);
+		drawList->AddText({pos.x - horizontalOffset + 1, pos.y - verticalOffset}, outlineColor, text);
 	}
 	drawList->AddText({pos.x - horizontalOffset, pos.y - verticalOffset}, textColor, text);
 
 	return textSize;
+}
+
+ImVec2 ImGuiCustom::drawProgressBar(ImDrawList *drawList, float fraction, const ImVec2 &pos, ImVec2 size, bool vertical, bool reverse, unsigned color, bool background, bool border) noexcept
+{
+	if (!(color & IM_COL32_A_MASK))
+		return {};
+
+	fraction = std::clamp(1.0f - fraction, 0.0f, 1.0f);
+	size = ImMax(size, {0, 0});
+
+	if (background)
+		drawList->AddRectFilled(pos - ImVec2{1, 1}, pos + size + ImVec2{1, 1}, color & IM_COL32_A_MASK);
+
+	if (border)
+		drawList->AddRect(pos, pos + size, color | IM_COL32_A_MASK);
+
+	const ImVec2 max = reverse ? pos + size : pos + size * (vertical ? ImVec2{1, fraction} : ImVec2{fraction, 1});
+	const ImVec2 min = reverse ? (vertical ? ImVec2{pos.x, std::lerp(pos.y, max.y, fraction)} : ImVec2{std::lerp(pos.x, max.x, fraction), pos.y}) : pos;
+
+	drawList->AddRectFilled(min, max, color);
+
+	return vertical ? ImVec2{(max.x + min.x) / 2, (reverse ? min.y : max.y)} : ImVec2{(reverse ? min.x : max.x), (max.y + min.y) / 2};
 }
 
 void ImGuiCustom::textEllipsisInTableCell(const char* text) noexcept

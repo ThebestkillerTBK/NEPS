@@ -82,7 +82,7 @@ struct LocalPlayerData
 	Vector inaccuracy;
 	Vector origin;
 	Vector velocity;
-	Vector colMaxs, colMins;
+	Vector obbMaxs, obbMins;
 };
 
 class Entity;
@@ -150,6 +150,7 @@ struct PlayerData : BaseData
 	bool isVip;
 	bool hasDefuser;
 	bool ducking;
+	int chokedPackets;
 	float flashDuration;
 	int health;
 	int armor;
@@ -158,8 +159,9 @@ struct PlayerData : BaseData
 	float lastContactTime;
 	std::string team;
 	uint64_t steamID;
+	float nextLbyUpdate;
+	bool lbyUpdate;
 	Vector headMins, headMaxs;
-	Vector colMins, colMaxs;
 	Vector origin;
 	Vector velocity;
 	Vector lookingAt;
@@ -167,6 +169,8 @@ struct PlayerData : BaseData
 	std::string activeWeapon;
 	std::vector<std::pair<Vector, Vector>> bones;
 	std::string lastPlaceName;
+private:
+	int previousUpdateTick;
 };
 
 struct WeaponData : BaseData

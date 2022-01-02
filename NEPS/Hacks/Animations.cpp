@@ -5,6 +5,8 @@
 #include "Backtrack.h"
 #include "Memory.h"
 
+#include "../GameData.h"
+
 #include "../SDK/Entity.h"
 #include "../SDK/Input.h"
 #include "../SDK/UserCmd.h"
@@ -21,12 +23,12 @@ void Animations::releaseState() noexcept
 		localPlayer->clientAnimations() = true;
 }
 
-void Animations::getDesyncedBones(Matrix3x4 *out) noexcept
+void Animations::getDesyncedBoneMatrices(Matrix3x4 *out) noexcept
 {
 	if (out) std::copy(desyncedBones.begin(), desyncedBones.end(), out);
 }
 
-void Animations::desyncedAnimations(const UserCmd &cmd, bool sendPacket) noexcept
+void Animations::computeDesync(const UserCmd &cmd, bool sendPacket) noexcept
 {
 	assert(desyncedState);
 
@@ -39,7 +41,7 @@ void Animations::desyncedAnimations(const UserCmd &cmd, bool sendPacket) noexcep
 
 	if (!memory->input->isCameraInThirdPerson) return;
 
-	if (static auto spawnTime = localPlayer->spawnTime(); !interfaces->engine->isInGame() || spawnTime != localPlayer->spawnTime())
+	if (static auto spawnTime = 0.0f; !interfaces->engine->isInGame() || spawnTime != localPlayer->spawnTime())
 	{
 		memory->createState(desyncedState, localPlayer.get());
 		spawnTime = localPlayer->spawnTime();
@@ -55,9 +57,9 @@ void Animations::desyncedAnimations(const UserCmd &cmd, bool sendPacket) noexcep
 		std::copy(poseParams.begin(), poseParams.end(), backupPoseParams.begin());
 
 		desyncedState->update(cmd.viewangles);
-		memory->invalidateBoneCache(localPlayer.get());
 		memory->setAbsAngle(localPlayer.get(), {0.0f, desyncedState->goalFeetYaw, 0.0f});
 
+		memory->invalidateBoneCache(localPlayer.get());
 		const bool updated = localPlayer->setupBones(desyncedBones.data(), MAX_STUDIO_BONES, BONE_USED_BY_ANYTHING, memory->globalVars->currentTime);
 
 		if (const auto &origin = localPlayer->getRenderOrigin(); updated)
@@ -70,11 +72,11 @@ void Animations::desyncedAnimations(const UserCmd &cmd, bool sendPacket) noexcep
 	}
 }
 
-void Animations::fixAnimation(const UserCmd &cmd, bool sendPacket) noexcept
+void Animations::syncLocal(const UserCmd &cmd, bool sendPacket) noexcept
 {
 	if (!localPlayer) return;
 
-	if (!config->misc.fixAnimation || !localPlayer->isAlive() || !memory->input->isCameraInThirdPerson)
+	if (!config->misc.fixLocalAnimations || !localPlayer->isAlive() || !memory->input->isCameraInThirdPerson)
 	{
 		localPlayer->clientAnimations() = true;
 		localPlayer->updateClientSideAnimation();
@@ -117,63 +119,50 @@ void Animations::fixAnimation(const UserCmd &cmd, bool sendPacket) noexcept
 	localPlayer->setupBones(nullptr, MAX_STUDIO_BONES, BONE_USED_BY_ANYTHING, memory->globalVars->currentTime);
 }
 
-struct ResolverData
-{
-	std::array<AnimLayer, AnimLayer_Count> previousLayers;
-	float feetYaw;
-	float nextLbyUpdate;
-	int misses;
-	int previousTick;
-};
-
-static std::array<ResolverData, 65> playerResolverData;
-
-void Animations::resolve(Entity *animatable) noexcept
+void Animations::resolveDesync(Entity *animatable) noexcept
 {
 	auto state = animatable->animState();
 	if (!state)
 		return;
 
-	auto &resolverData = playerResolverData[animatable->index()];
-	const bool lbyUpdate = Helpers::lbyUpdate(animatable, resolverData.nextLbyUpdate);
-	const auto layers = animatable->animLayers();
-
-	if (animatable->handle() == Aimbot::getTargetHandle())
-		resolverData.misses = Aimbot::getMisses();
-
-	animatable->clientAnimations() = true;
-
-	const auto simulationTick = Helpers::timeToTicks(animatable->simulationTime());
-	if (resolverData.previousTick != simulationTick)
+	constexpr auto authentic = [](Entity *animatable) noexcept
 	{
-		resolverData.previousTick = simulationTick;
+		#ifndef NEPS_DEBUG
+		if (animatable->moveType() == MoveType::Ladder) return true;
+		if (animatable->moveType() == MoveType::Noclip) return true;
+		if (animatable->isBot()) return true;
+		const float simulationTime = animatable->simulationTime();
+		const auto remoteActiveWeapon = animatable->getActiveWeapon();
+		if (remoteActiveWeapon && Helpers::timeToTicks(remoteActiveWeapon->lastShotTime()) == Helpers::timeToTicks(simulationTime)) return true;
 
-		const float maxDesync = std::fminf(std::fabsf(animatable->getMaxDesyncAngle()), 58.0f);
-		const float lowDesync = std::fminf(35.0f, maxDesync);
-		if (!Helpers::animDataAuthenticity(animatable) && !lbyUpdate)
+		GameData::Lock lock;
+
+		if (auto playerData = GameData::playerByHandle(animatable->handle()))
 		{
-			animatable->updateClientSideAnimation();
+			if (playerData->chokedPackets < -3) return true;
+			if (playerData->lbyUpdate) return true;
+		}
+		#endif // NEPS_DEBUG
 
-			const float lbyDelta = Helpers::angleDiffDeg(animatable->eyeAngles().y, state->goalFeetYaw);
+		return false;
+	};
 
-			const std::array<float, 3U> positions = {-maxDesync, 0.0f, maxDesync};
-			std::vector<float> distances;
-			for (const auto &position : positions)
-				distances.emplace_back(std::fabsf(position - lbyDelta));
+	const float maxDesync = std::fminf(std::fabsf(animatable->getMaxDesyncAngle()), 58.0f);
+	const float lowDesync = std::fminf(35.0f, maxDesync);
+	if (!authentic(animatable))
+	{
+		const float lbyDelta = Helpers::angleDiffDeg(animatable->eyeAngles().y, state->goalFeetYaw);
 
-			const auto current = std::distance(distances.begin(), std::min_element(distances.begin(), distances.end()));
+		const std::array<float, 3U> positions = {-maxDesync, 0.0f, maxDesync};
+		//std::vector<float> distances;
+		//for (const auto &position : positions)
+		//	distances.emplace_back(std::fabsf(position - lbyDelta));
 
-			resolverData.feetYaw = Helpers::normalizeDeg(animatable->eyeAngles().y + positions[(current + resolverData.misses + 1) % positions.size()]);
-		} else resolverData.feetYaw = state->goalFeetYaw;
+		//const auto current = std::distance(distances.begin(), std::min_element(distances.begin(), distances.end()));
+
+		//state->goalFeetYaw = Helpers::normalizeDeg(animatable->eyeAngles().y + positions[(current + Aimbot::getMisses() + 1) % positions.size()]);
+		state->goalFeetYaw = Helpers::normalizeDeg(animatable->eyeAngles().y + positions[Aimbot::getMisses() % positions.size()]);
 	}
-
-	state->duckAmount = std::clamp(state->duckAmount, 0.0f, 1.0f);
-	state->landingDuckAdditiveAmount = std::clamp(state->landingDuckAdditiveAmount, 0.0f, 1.0f);
-	state->feetCycle = layers[AnimLayer_MovementMove].cycle;
-	state->moveWeight = layers[AnimLayer_MovementMove].weight;
-	state->goalFeetYaw = resolverData.feetYaw;
-
-	std::copy(layers, layers + animatable->getAnimLayerCount(), resolverData.previousLayers.begin());
 
 	memory->invalidateBoneCache(animatable);
 	animatable->setupBones(nullptr, MAX_STUDIO_BONES, BONE_USED_BY_ANYTHING, memory->globalVars->currentTime);

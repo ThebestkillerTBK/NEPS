@@ -1072,8 +1072,8 @@ void Visuals::playerBounds(ImDrawList *drawList) noexcept
 	if (!local.exists || !local.alive)
 		return;
 
-	Vector max = local.colMaxs + local.origin;
-	Vector min = local.colMins + local.origin;
+	Vector max = local.obbMaxs + local.origin;
+	Vector min = local.obbMins + local.origin;
 	const auto z = local.origin.z;
 
 	ImVec2 points[4];
@@ -1116,7 +1116,7 @@ void Visuals::playerVelocity(ImDrawList *drawList) noexcept
 	{
 		const auto color = Helpers::calculateColor(config->visuals.playerVelocity);
 		drawList->AddLine(pos, dir, color, config->visuals.playerVelocity.thickness);
-		ImGuiCustom::drawText(drawList, 0.0f, 0.0f, color, color & IM_COL32_A_MASK, std::to_string(static_cast<int>(local.velocity.length())).c_str(), dir);
+		ImGuiCustom::drawText(drawList, std::to_string(static_cast<int>(local.velocity.length())).c_str(), dir, color, config->visuals.playerVelocity.outline, color & IM_COL32_A_MASK);
 	}
 }
 

@@ -57,8 +57,6 @@ void Backtrack::update(FrameStage stage) noexcept
 			record.hasHelmet = entity->hasHelmet();
 			record.armor = entity->armor();
 
-			record.important = Helpers::animDataAuthenticity(entity);
-
 			std::copy(entity->boneCache().memory, entity->boneCache().memory + entity->boneCache().size, record.bones);
 
 			records[i].push_front(record);
@@ -72,6 +70,8 @@ void Backtrack::update(FrameStage stage) noexcept
 	}
 }
 
+static bool backtracked = false;
+
 void Backtrack::run(UserCmd *cmd) noexcept
 {
 	if (!config->backtrack.enabled)
@@ -84,11 +84,9 @@ void Backtrack::run(UserCmd *cmd) noexcept
 		return;
 
 	Entity *bestTarget = interfaces->entityList->getEntityFromHandle(Aimbot::getTargetHandle());
-	const Record *bestRecord = nullptr;
+	const Record *bestRecord = Aimbot::getTargetRecord();
 
-	if (bestTarget)
-		bestRecord = Aimbot::getTargetRecord();
-	else
+	if (!bestTarget)
 	{
 		auto localPlayerEyePosition = localPlayer->getEyePosition();
 		const auto aimPunch = localPlayer->getAimPunch();
@@ -137,6 +135,8 @@ void Backtrack::run(UserCmd *cmd) noexcept
 		}
 	}
 
+	backtracked = false;
+
 	if (bestRecord && bestTarget)
 	{
 		memory->setAbsOrigin(bestTarget, bestRecord->origin);
@@ -184,6 +184,13 @@ void Backtrack::updateIncomingSequences() noexcept
 
 	while (sequences.size() > 2048)
 		sequences.pop_back();
+		backtracked = true;
+	}
+}
+
+bool Backtrack::lastShotLagRecord() noexcept
+{
+	return backtracked;
 }
 
 

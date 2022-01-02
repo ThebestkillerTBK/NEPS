@@ -1,6 +1,8 @@
 ﻿#include "Misc.h"
 
+#include "Aimbot.h"
 #include "Animations.h"
+#include "Backtrack.h"
 #include "EnginePrediction.h"
 
 #include "../SDK/Client.h"
@@ -368,20 +370,38 @@ void Misc::visualizeInaccuracy(ImDrawList *drawList) noexcept
 
 void Misc::prepareRevolver(UserCmd *cmd) noexcept
 {
+	if (static Helpers::KeyBindState flag; !flag[config->misc.prepareRevolver])
+		return;
+
+	if (!localPlayer) return;
+	
+	if (cmd->buttons & UserCmd::Button_Attack)
+		return;
+
 	constexpr float revolverPrepareTime = 0.234375f;
 
-	static float readyTime;
-	if (static Helpers::KeyBindState flag; flag[config->misc.prepareRevolver])
+	if (auto activeWeapon = localPlayer->getActiveWeapon(); activeWeapon && activeWeapon->itemDefinitionIndex2() == WeaponId::Revolver)
 	{
-		if (auto activeWeapon = localPlayer->getActiveWeapon(); activeWeapon && activeWeapon->itemDefinitionIndex2() == WeaponId::Revolver)
+		const auto time = memory->globalVars->serverTime();
+
+		if (localPlayer->nextAttack() > time)
+			return;
+
+		cmd->buttons &= ~UserCmd::Button_Attack2;
+
+		static auto readyTime = time + revolverPrepareTime;
+		if (activeWeapon->nextPrimaryAttack() <= time)
 		{
-			if (!readyTime) readyTime = memory->globalVars->serverTime() + revolverPrepareTime;
-			auto ticksToReady = Helpers::timeToTicks(readyTime - memory->globalVars->serverTime() - interfaces->engine->getNetworkChannel()->getLatency(0));
-			if (ticksToReady > 0 && ticksToReady <= Helpers::timeToTicks(revolverPrepareTime))
+			if (readyTime <= time)
+			{
+				if (activeWeapon->nextSecondaryAttack() <= time)
+					readyTime = time + revolverPrepareTime;
+				else
+					cmd->buttons |= UserCmd::Button_Attack2;
+			} else
 				cmd->buttons |= UserCmd::Button_Attack;
-			else
-				readyTime = 0.0f;
-		}
+		} else
+			readyTime = time + revolverPrepareTime;
 	}
 }
 
@@ -1036,22 +1056,21 @@ void Misc::tweakPlayerAnimations(FrameStage stage) noexcept
 	if (!config->misc.fixAnimationLOD && !config->misc.resolveLby)
 		return;
 
-	if (stage == FrameStage::RenderStart)
-		for (int i = 1; i <= interfaces->engine->getMaxClients(); i++)
+	for (int i = 1; i <= interfaces->engine->getMaxClients(); i++)
+	{
+		Entity *entity = interfaces->entityList->getEntity(i);
+
+		if (!entity || entity == localPlayer.get() || entity->isDormant() || !entity->isAlive()) continue;
+
+		if (config->misc.fixAnimationLOD)
 		{
-			Entity *entity = interfaces->entityList->getEntity(i);
-
-			if (!entity || entity == localPlayer.get() || entity->isDormant() || !entity->isAlive()) continue;
-
-			if (config->misc.fixAnimationLOD)
-			{
-				*reinterpret_cast<int *>(entity + 0xA28) = 0;
-				*reinterpret_cast<int *>(entity + 0xA30) = memory->globalVars->frameCount;
-			}
-
-			if (config->misc.resolveLby)
-				Animations::resolve(entity);
+			*reinterpret_cast<int *>(entity + 0xA28) = 0;
+			*reinterpret_cast<int *>(entity + 0xA30) = memory->globalVars->frameCount;
 		}
+
+		if (config->misc.resolveLby)
+			Animations::resolveDesync(entity);
+	}
 }
 
 void Misc::autoPistol(UserCmd *cmd) noexcept
@@ -1446,27 +1465,14 @@ void Misc::visualizeBlockBot(ImDrawList *drawList) noexcept
 	if (!target || target->dormant || !target->alive)
 		return;
 
-	Vector curDir = target->velocity * 0.12f;
-	curDir.z = 0.0f;
-	Vector max = target->colMaxs + target->origin;
-	Vector min = target->colMins + target->origin;
+	Vector max = target->obbMaxs + target->origin;
+	Vector min = target->obbMins + target->origin;
 	const auto z = target->origin.z;
 
-	ImVec2 pos, dir;
 	ImVec2 points[4];
-
 	const auto color = Helpers::calculateColor(config->griefing.blockbot.visualize);
 
-	bool draw = Helpers::worldToScreen(target->origin, pos);
-	draw = draw && Helpers::worldToScreen(curDir + target->origin, dir);
-
-	if (draw)
-	{
-		drawList->AddLine(pos, dir, color);
-		ImGuiCustom::drawText(drawList, 0.0f, 0.0f, color, color & IM_COL32_A_MASK, std::to_string(static_cast<int>(target->velocity.length())).c_str(), dir);
-	}
-
-	draw = Helpers::worldToScreen(Vector{max.x, max.y, z}, points[0]);
+	bool draw = Helpers::worldToScreen(Vector{max.x, max.y, z}, points[0]);
 	draw = draw && Helpers::worldToScreen(Vector{max.x, min.y, z}, points[1]);
 	draw = draw && Helpers::worldToScreen(Vector{min.x, min.y, z}, points[2]);
 	draw = draw && Helpers::worldToScreen(Vector{min.x, max.y, z}, points[3]);
@@ -1509,26 +1515,38 @@ void Misc::useSpam(UserCmd *cmd) noexcept
 
 void Misc::indicators() noexcept
 {
+	if (!config->misc.indicators.enabled)
+		return;
+
 	GameData::Lock lock;
 	const auto &local = GameData::local();
 
-	if (!local.exists || !local.alive)
+	if ((!local.exists || !local.alive) && !gui->open)
 		return;
 
-	if (!config->misc.indicators.enabled)
-		return;
+	ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+	if (!gui->open)
+		windowFlags |= ImGuiWindowFlags_NoInputs;
 
 	ImGui::SetNextWindowPos({0, 50}, ImGuiCond_FirstUseEver);
 	ImGui::SetNextWindowSizeConstraints(ImVec2{200.0f, 0.0f}, ImVec2{200.0f, FLT_MAX});
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowTitleAlign, {0.5f, 0.5f});
-	ImGui::Begin("Indicators", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | (gui->open ? 0 : ImGuiWindowFlags_NoInputs));
+	ImGui::Begin("Indicators", nullptr, windowFlags);
 	ImGui::PopStyleVar();
 	
+	if (!local.exists)
+	{
+		ImGui::TextWrapped("Shows things like choked packets, height, speed and shot statistics");
+		ImGui::End();
+		return;
+	}
+
 	const auto networkChannel = interfaces->engine->getNetworkChannel();
 	if (networkChannel)
 	{
+		static auto maxChokeVar = interfaces->cvar->findVar("sv_maxusrcmdprocessticks");
 		ImGui::TextUnformatted("Choked packets");
-		ImGuiCustom::progressBarFullWidth(static_cast<float>(networkChannel->chokedPackets) / 16);
+		ImGuiCustom::progressBarFullWidth(static_cast<float>(networkChannel->chokedPackets) / maxChokeVar->getInt());
 	}
 
 	ImGui::TextUnformatted("Height");
@@ -1536,8 +1554,10 @@ void Misc::indicators() noexcept
 
 	ImGui::Text("Speed %.0fu", local.velocity.length2D());
 
-	if (memory->input->isCameraInThirdPerson)
-		ImGui::TextUnformatted("In thirdperson");
+	ImGui::Text("In %s person", memory->input->isCameraInThirdPerson ? "third" : "first");
+
+	ImGui::Text("Last shot: %s", Backtrack::lastShotLagRecord() ? "lag record" : "modern record");
+	ImGui::Text("Target misses: %d", Aimbot::getMisses());
 
 	ImGui::End();
 }
@@ -1555,17 +1575,32 @@ void Misc::drawBombTimer() noexcept
 	if (!plantedC4.blowTime && !gui->open)
 		return;
 
-	static float windowWidth = 500.0f;
-	ImGui::SetNextWindowPos({(ImGui::GetIO().DisplaySize.x - 500.0f) / 2.0f, 160.0f}, ImGuiCond_FirstUseEver);
-	ImGui::SetNextWindowSize({windowWidth, 0}, ImGuiCond_FirstUseEver);
-
+	ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoNav;
 	if (!gui->open)
-		ImGui::SetNextWindowSize({windowWidth, 0});
+		windowFlags |= ImGuiWindowFlags_NoInputs;
 
+	static float windowWidth = 500.0f;
+	ImGui::SetNextWindowPos({(ImGui::GetIO().DisplaySize.x - 500) / 2, 160}, ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowSize({500, 0}, ImGuiCond_FirstUseEver);
+	if (!gui->open) ImGui::SetNextWindowSize({windowWidth, 0}, ImGuiCond_Always);
 	ImGui::SetNextWindowSizeConstraints({200, -1}, {FLT_MAX, -1});
-	ImGui::Begin("Bomb timer", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoNav | (gui->open ? 0 : ImGuiWindowFlags_NoInputs));
+	ImGui::Begin("Bomb timer", nullptr, windowFlags | (gui->open ? 0 : ImGuiWindowFlags_NoInputs));
 
-	std::ostringstream ss; ss << "Bomb on " << (!plantedC4.bombsite ? 'A' : 'B') << " " << std::fixed << std::showpoint << std::setprecision(3) << (std::max)(plantedC4.blowTime - memory->globalVars->currentTime, 0.0f) << " s";
+	constexpr auto bombsite = [](int i)
+	{
+		switch (i)
+		{
+		case 0:
+			return 'A';
+		case 1:
+			return 'B';
+		default:
+			return '?';
+		}
+	};
+
+	std::ostringstream ss;
+	ss << "Bomb on " << bombsite(plantedC4.bombsite) << " " << std::fixed << std::showpoint << std::setprecision(3) << (std::max)(plantedC4.blowTime - memory->globalVars->currentTime, 0.0f) << "s";
 
 	ImGuiCustom::textUnformattedCentered(ss.str().c_str());
 
@@ -1577,12 +1612,12 @@ void Misc::drawBombTimer() noexcept
 
 		if (plantedC4.defuserHandle == GameData::local().handle)
 		{
-			std::ostringstream ss; ss << "Defusing... " << std::fixed << std::showpoint << std::setprecision(3) << (std::max)(plantedC4.defuseCountDown - memory->globalVars->currentTime, 0.0f) << " s";
+			std::ostringstream ss; ss << "Defusing... " << std::fixed << std::showpoint << std::setprecision(3) << (std::max)(plantedC4.defuseCountDown - memory->globalVars->currentTime, 0.0f) << "s";
 
 			ImGuiCustom::textUnformattedCentered(ss.str().c_str());
 		} else if (auto playerData = GameData::playerByHandle(plantedC4.defuserHandle))
 		{
-			std::ostringstream ss; ss << playerData->name << " is defusing... " << std::fixed << std::showpoint << std::setprecision(3) << (std::max)(plantedC4.defuseCountDown - memory->globalVars->currentTime, 0.0f) << " s";
+			std::ostringstream ss; ss << playerData->name << " is defusing... " << std::fixed << std::showpoint << std::setprecision(3) << (std::max)(plantedC4.defuseCountDown - memory->globalVars->currentTime, 0.0f) << "s";
 
 			ImGuiCustom::textUnformattedCentered(ss.str().c_str());
 		}
@@ -1669,10 +1704,10 @@ void Misc::purchaseList(GameEvent *event) noexcept
 			return;
 
 		ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
-		if (!gui->open)
-			windowFlags |= ImGuiWindowFlags_NoInputs;
 		if (config->misc.purchaseList.noTitleBar)
 			windowFlags |= ImGuiWindowFlags_NoTitleBar;
+		if (!gui->open)
+			windowFlags |= ImGuiWindowFlags_NoInputs;
 
 		ImGui::SetNextWindowSize({200, 200}, ImGuiCond_FirstUseEver);
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowTitleAlign, {0.5f, 0.5f});
@@ -2039,7 +2074,7 @@ void Misc::teamDamageList(GameEvent *event)
 			const auto player = interfaces->entityList->getEntity(interfaces->engine->getPlayerFromUserID(event->getInt("userid")));
 
 			if (attacker && player && localPlayer && !localPlayer->isOtherEnemy(attacker) && !player->isOtherEnemy(attacker) && player->handle() != attacker->handle())
-				damageList[attacker->index()].first += event->getInt("dmg_health");
+				damageList[attacker->handle()].first += event->getInt("dmg_health");
 
 			break;
 		}
@@ -2049,7 +2084,7 @@ void Misc::teamDamageList(GameEvent *event)
 			const auto player = interfaces->entityList->getEntity(interfaces->engine->getPlayerFromUserID(event->getInt("userid")));
 
 			if (attacker && player && localPlayer && !localPlayer->isOtherEnemy(attacker) && !player->isOtherEnemy(attacker) && player->handle() != attacker->handle())
-				damageList[attacker->index()].second++;
+				damageList[attacker->handle()].second++;
 
 			break;
 		}
@@ -2059,21 +2094,20 @@ void Misc::teamDamageList(GameEvent *event)
 		}
 	} else
 	{
-		if (!interfaces->engine->isConnected())
-		{
-			damageList.clear();
-			return;
-		}
-
-		if (!config->griefing.teamDamageList.enabled)
+		if (!config->misc.teamDamageList.enabled)
 			return;
 
 		if (!interfaces->engine->isInGame())
+			damageList.clear();
+
+		if (!gui->open && (damageList.empty() || !interfaces->engine->isInGame()))
 			return;
 
 		ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
-		if (config->griefing.teamDamageList.noTitleBar)
+		if (config->misc.teamDamageList.noTitleBar)
 			windowFlags |= ImGuiWindowFlags_NoTitleBar;
+		if (!gui->open)
+			windowFlags |= ImGuiWindowFlags_NoInputs;
 
 		ImGui::SetNextWindowSize({200, 200}, ImGuiCond_FirstUseEver);
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowTitleAlign, {0.5f, 0.5f});
@@ -2082,12 +2116,15 @@ void Misc::teamDamageList(GameEvent *event)
 
 		GameData::Lock lock;
 
-		for (const auto &[handle, damage] : damageList)
+		for (const auto &[handle, info] : damageList)
 		{
 			if (const auto player = GameData::playerByHandle(handle))
-				ImGui::Text("%s -> %idp, %ikills", player->name.c_str(), damage.first, damage.second);
+				ImGui::Text("%s -> %idmg %i%s", player->name.c_str(), info.first, info.second, info.second == 1 ? "kill" : "kills");
 			else if (GameData::local().handle == handle)
-				ImGui::TextColored({1.0f, 0.7f, 0.2f, 1.0f}, "YOU -> %idp, %ikills", damage.first, damage.second);
+				ImGui::TextColored({1.0f, 0.7f, 0.2f, 1.0f}, "YOU -> %idmg %i%s", info.first, info.second, info.second == 1 ? "kill" : "kills");
+
+			ImGuiCustom::progressBarFullWidth(static_cast<float>(info.first) / 300);
+			ImGuiCustom::progressBarFullWidth(static_cast<float>(info.second) / 3);
 		}
 
 		ImGui::End();
@@ -2263,10 +2300,14 @@ void Misc::spectatorList() noexcept
 
 	if (!observers.empty() || gui->open)
 	{
-		ImGui::SetNextWindowPos(ImVec2{ImGui::GetIO().DisplaySize.x - 200.0f, ImGui::GetIO().DisplaySize.y / 2 - 20.0f}, ImGuiCond_FirstUseEver);
-		ImGui::SetNextWindowSizeConstraints(ImVec2{200.0f, 0.0f}, ImVec2{FLT_MAX, FLT_MAX});
+		ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+		if (!gui->open)
+			windowFlags |= ImGuiWindowFlags_NoInputs;
+
+		ImGui::SetNextWindowPos(ImVec2{ImGui::GetIO().DisplaySize.x - 200, ImGui::GetIO().DisplaySize.y / 2 - 20}, ImGuiCond_FirstUseEver);
+		ImGui::SetNextWindowSizeConstraints({200, 0}, ImVec2{FLT_MAX, FLT_MAX});
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowTitleAlign, {0.5f, 0.5f});
-		ImGui::Begin("Spectators", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | (gui->open ? 0 : ImGuiWindowFlags_NoInputs));
+		ImGui::Begin("Spectators", nullptr, windowFlags);
 		ImGui::PopStyleVar();
 
 		for (auto &observer : observers)
@@ -2281,25 +2322,29 @@ void Misc::watermark() noexcept
 	if (!config->misc.watermark.enabled)
 		return;
 
+	ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove;
+	if (!gui->open)
+		windowFlags |= ImGuiWindowFlags_NoInputs;
+
 	ImGui::SetNextWindowSizeConstraints({160, 0}, {FLT_MAX, FLT_MAX});
 	ImGui::SetNextWindowBgAlpha(0.4f);
-	ImGui::Begin("Watermark", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove);
+	ImGui::Begin("Watermark", nullptr, windowFlags);
 
 	int &pos = config->misc.watermark.position;
 
 	switch (pos)
 	{
 	case 0:
-		ImGui::SetWindowPos(ImVec2{10.0f, 10.0f}, ImGuiCond_Always);
+		ImGui::SetWindowPos({10, 10}, ImGuiCond_Always);
 		break;
 	case 1:
-		ImGui::SetWindowPos(ImVec2{ImGui::GetIO().DisplaySize.x - ImGui::GetWindowSize().x - 10.0f, 10.0f}, ImGuiCond_Always);
+		ImGui::SetWindowPos({ImGui::GetIO().DisplaySize.x - ImGui::GetWindowSize().x - 10, 10}, ImGuiCond_Always);
 		break;
 	case 2:
-		ImGui::SetWindowPos(ImGui::GetIO().DisplaySize - ImGui::GetWindowSize() - ImVec2{10.0f, 10.0f}, ImGuiCond_Always);
+		ImGui::SetWindowPos(ImGui::GetIO().DisplaySize - ImGui::GetWindowSize() - ImVec2{10, 10}, ImGuiCond_Always);
 		break;
 	case 3:
-		ImGui::SetWindowPos(ImVec2{10.0f, ImGui::GetIO().DisplaySize.y - ImGui::GetWindowSize().y - 10.0f}, ImGuiCond_Always);
+		ImGui::SetWindowPos({10.0f, ImGui::GetIO().DisplaySize.y - ImGui::GetWindowSize().y - 10}, ImGuiCond_Always);
 		break;
 	}
 
@@ -2319,7 +2364,7 @@ void Misc::watermark() noexcept
 		ImGui::EndPopup();
 	}
 
-	constexpr std::array otherOnes = {"gamesense", "neverlose", "aimware", "onetap", "advancedaim", "flowhooks", "ratpoison", "osiris", "rifk7", "novoline", "novihacks", "ev0lve", "ezfrags", "pandora", "luckycharms", "weave", "legendware", "spirthack", "mutinty"};
+	constexpr std::array otherOnes = {"gamesense", "neverlose", "aimware", "onetap", "advancedaim", "flowhooks", "ratpoison", "osiris", "rifk7", "novoline", "novihacks", "ev0lve", "ezfrags", "pandora", "luckycharms", "weave", "legendware", "spirthack", "mutinty", "monolith"};
 
 	std::ostringstream watermark;
 	watermark << "NEPS > ";
