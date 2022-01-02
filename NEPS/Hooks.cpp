@@ -199,6 +199,7 @@ static bool __stdcall createMove(float inputSampleTime, UserCmd *cmd) noexcept
 
 	static auto previousViewAngles = cmd->viewangles;
 	const auto currentViewAngles = cmd->viewangles;
+	auto currentCmd = *cmd;
 
 	memory->globalVars->serverTime(cmd);
 	Misc::changeConVarsTick();
@@ -220,7 +221,7 @@ static bool __stdcall createMove(float inputSampleTime, UserCmd *cmd) noexcept
 	Misc::fastStop(cmd);
 	Misc::autoStrafe(cmd);
 	Misc::autoJumpBug(cmd);
-	Visuals::runFreeCam(cmd);
+	Visuals::runFreeCam(cmd, currentViewAngles);
 	Misc::bunnyHop(cmd);
 	Misc::fixMouseDelta(cmd);
 	Misc::prepareRevolver(cmd);
@@ -261,8 +262,12 @@ static bool __stdcall createMove(float inputSampleTime, UserCmd *cmd) noexcept
 	cmd->viewangles = previousViewAngles + viewAnglesDelta;
 
 	cmd->viewangles.normalize();
+	if ((currentViewAngles != cmd->viewangles
+		|| cmd->forwardmove != currentCmd.forwardmove
+		|| cmd->sidemove != currentCmd.sidemove) 
+		&& (cmd->sidemove != 0 || cmd->forwardmove != 0))
+		Misc::fixMovement(cmd, currentViewAngles.y);
 
-	Misc::fixMovement(cmd, currentViewAngles.y);
 	Misc::moonwalk(cmd);
 	Misc::quickPeek(cmd);
 

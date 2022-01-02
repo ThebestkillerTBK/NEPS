@@ -669,6 +669,7 @@ void StreamProofESP::render() noexcept
 	for (const auto &player : GameData::players())
 	{
 		if (!player.alive) continue;
+		if (!interfaces->entityList->getEntityFromHandle(player.handle)) continue;
 		if (player.handle == GameData::local().observerTargetHandle) continue;
 
 		auto &playerConfig = player.enemy ? config->esp.enemies : config->esp.allies;

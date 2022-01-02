@@ -457,7 +457,11 @@ static void from_json(const json &j, Config::AntiAim &a)
 	read(j, "Right limit", a.rightLimit);
 	read(j, "Dance", a.dance);
 	read(j, "AA", a.AAType);
+	read(j, "Spin factor", a.spinFactor);
+	read(j, "Shake angle", a.shakeAngle);
+	read(j, "Side dir", a.sideDir);
 	read(j, "Peek mode", a.peekMode);
+
 }
 
 static void from_json(const json &j, Config::Glow &g)
@@ -1241,6 +1245,9 @@ static void to_json(json &j, const Config::AntiAim &o, const Config::AntiAim &du
 	WRITE("Left limit", leftLimit);
 	WRITE("Right limit", rightLimit);
 	WRITE("Dance", dance);
+	WRITE("Spin factor", spinFactor);
+	WRITE("Shake angle", shakeAngle);
+	WRITE("Side dir", sideDir); 
 	WRITE("AA", AAType);
 	WRITE("Peek mode", peekMode);
 }

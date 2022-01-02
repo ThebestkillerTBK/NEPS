@@ -308,6 +308,8 @@ void AntiAim::run(UserCmd* cmd, const Vector& currentViewAngles, bool& sendPacke
 	int maxJitter;
 	float temp;
 	Vector temp_qangle;
+	auto ang2 = cfg.sideDir ? -45.f : 45.f;
+	auto ang1 = cfg.shakeAngle;
 
 	if (cfg.dance)
 	{
@@ -337,12 +339,12 @@ void AntiAim::run(UserCmd* cmd, const Vector& currentViewAngles, bool& sendPacke
 		break;
 	case 2:
 		factor = 360.0 / M_PHI;
-		factor *= 25;
+		factor *= cfg.spinFactor;
 		cmd->viewangles.y = fmodf(memory->globalVars->currentTime * factor, 360.0);
 		break;
 	case 3:
 		trigger += 10.0f;
-		cmd->viewangles.y -= std::clamp(trigger > 0.f ? -12.f * trigger / 10.f : 12.f * trigger / 10.f, -180.f, 180.f);;
+		cmd->viewangles.y -= std::clamp(trigger > 0.f ? -ang1 * trigger / 10.f : ang1 * trigger / 10.f, -180.f, 180.f);;
 
 		if (trigger > 50.f)
 			trigger = -50.f;
@@ -353,18 +355,11 @@ void AntiAim::run(UserCmd* cmd, const Vector& currentViewAngles, bool& sendPacke
 		temp_qangle.clamp();
 		temp = temp_qangle.y;
 
-		if (temp > -45.0f)
-			temp < 0.0f ? temp = -90.0f : temp < 45.0f ? temp = 90.0f : temp = temp;
+		if (temp > ang2)
+			temp < 0.0f ? temp = 2.f * ang2 : temp < -ang2 ? temp = -2.f * ang2 : temp = temp;
 
 		temp += 1800000.0f;
 		cmd->viewangles.y = temp;
-		break;
-	case 5:
-		trigger += 10.0f;
-		cmd->viewangles.y -= std::clamp(trigger > 0.f ? -24.f * trigger / 10.f : 24.f * trigger / 10.f, -180.f, 180.f);
-
-		if (trigger > 50.f)
-			trigger = -50.f;
 		break;
 	}
 }

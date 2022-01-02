@@ -36,7 +36,7 @@
 
 static int buttons = 0;
 
-void Visuals::runFreeCam(UserCmd* cmd) noexcept
+void Visuals::runFreeCam(UserCmd* cmd, Vector viewAngles) noexcept
 {
 	static Vector currentViewAngles = Vector{ };
 	static Vector realViewAngles = Vector{ };
@@ -337,7 +337,10 @@ void Visuals::modifyFire(FrameStage stage) noexcept
 
 void Visuals::thirdperson() noexcept
 {
-	if (!localPlayer || !config->visuals.thirdPerson.keyMode)
+	if (!localPlayer)
+		return;
+
+	if (!config->visuals.thirdPerson.keyMode && !config->visuals.freeCam.keyMode)
 	{
 		if (localPlayer->isAlive())
 			memory->input->isCameraInThirdPerson = false;
@@ -345,9 +348,10 @@ void Visuals::thirdperson() noexcept
 	}
 
 	static Helpers::KeyBindState thirdPerson;
+	static Helpers::KeyBindState freeCam;
 
 	if (localPlayer->isAlive())
-		memory->input->isCameraInThirdPerson = thirdPerson[config->visuals.thirdPerson];
+		memory->input->isCameraInThirdPerson = thirdPerson[config->visuals.thirdPerson] || freeCam[config->visuals.freeCam];
 	else if (localPlayer->getObserverTarget() && (localPlayer->observerMode() == ObsMode::InEye || localPlayer->observerMode() == ObsMode::Chase))
 	{ 
 		memory->input->isCameraInThirdPerson = false;

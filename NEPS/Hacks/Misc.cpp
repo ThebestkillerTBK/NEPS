@@ -1874,11 +1874,10 @@ void Misc::playerList() noexcept
 
 			for (auto& player : playersOrdered)
 			{
-				auto currentPlayer = player.get();
 				ImGui::TableNextRow();
 				ImGui::PushID(ImGui::TableGetRowIndex());
 
-				auto* entity = interfaces->entityList->getEntityFromHandle(currentPlayer.handle);
+				auto* entity = interfaces->entityList->getEntityFromHandle(player.get().handle);
 				if (!entity) continue;
 
 				if (ImGui::TableNextColumn())

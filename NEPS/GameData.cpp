@@ -463,27 +463,20 @@ void PlayerData::update(Entity *entity) noexcept
 	inViewFrustum = !interfaces->engine->cullBox(obbMins + origin, obbMaxs + origin);
 	audible = false;
 
+	const auto idx = entity->index();
+
 	if (entity->isDormant())
 	{
 		if (!dormant)
 			becameDormant = memory->globalVars->realTime;
+		
+		if (const auto pr = *memory->playerResource)
+			health = pr->getPlayerResourceInterface()->getPlayerHealth(idx);
 		dormant = true;
 		return;
 	}
 
 	dormant = false;
-
-	const auto idx = entity->index();
-
-	if (entity->isDormant()) {
-		if (const auto pr = *memory->playerResource) {
-			alive = pr->getPlayerResourceInterface()->isAlive(idx);
-			if (!alive)
-				lastContactTime = 0.0f;
-			health = pr->getPlayerResourceInterface()->getPlayerHealth(idx);
-		}
-		return;
-	}
 
 	static_cast<BaseData &>(*this) = {entity};
 	origin = entity->getAbsOrigin();

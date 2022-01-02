@@ -5,10 +5,11 @@ enum class FrameStage;
 class GameEvent;
 struct ViewSetup;
 struct ImDrawList;
+struct Vector;
 
 namespace Visuals
 {
-    void runFreeCam(UserCmd* cmd) noexcept;
+    void runFreeCam(UserCmd* cmd, Vector viewAngles) noexcept;
     void freeCam(ViewSetup* setup) noexcept;
     void musicKit(FrameStage stage) noexcept;
     void playerModel(FrameStage stage) noexcept;

@@ -955,7 +955,17 @@ void GUI::renderAntiAimWindow(bool contentOnly) noexcept
 		}
 
 		ImGui::SetNextItemWidth(130);
-		ImGui::Combo("AA Type", &currentConfig.AAType, "None\0Jitter\0Fast spin\0Small shake\0Side\0Big Shake\0");
+		ImGui::Combo("AA Type", &currentConfig.AAType, "None\0Jitter\0Spin\0Small shake\0Side\0");
+		ImGui::SameLine();
+		if (ImGui::ArrowButton("aa_cfg", ImGuiDir_Right))
+			ImGui::OpenPopup("##aacfg");
+		if (ImGui::BeginPopup("##aacfg"))
+		{
+			ImGui::SliderFloat("##sf", &currentConfig.spinFactor, 1.f, 50.f, "Spin factor %.2fdeg");
+			ImGui::SliderFloat("##sa", &currentConfig.shakeAngle, 1.f, 60.f, "Shake angle %.0fdeg");
+			ImGui::Checkbox("Side Ddrection", &currentConfig.sideDir);
+			ImGui::EndPopup();
+		}
 	}
 
 	ImGui::EndChild();

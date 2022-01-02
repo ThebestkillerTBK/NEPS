@@ -147,6 +147,9 @@ public:
 		bool dance = false;
 		int AAType = 0;
 		int peekMode = 0;
+		float spinFactor = 25.f;
+		float shakeAngle = 12.f;
+		bool sideDir = false;
 	};
 
 	std::unordered_map<std::string, AntiAim> antiAim;
