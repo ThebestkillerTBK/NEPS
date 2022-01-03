@@ -530,9 +530,6 @@ void Aimbot::run(UserCmd *cmd) noexcept
 			if (cfg.interpolation == 2 || cfg.interpolation == 3)
 				targetAngle = targetAngle * (1.0f - cfg.quadratic);
 
-
-
-
 			const auto l = targetAngle.length();
 
 

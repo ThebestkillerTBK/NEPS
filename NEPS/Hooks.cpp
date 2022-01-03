@@ -108,6 +108,7 @@ static HRESULT __stdcall present(IDirect3DDevice9 *device, const RECT *src, cons
 	Misc::soundESP();
 	StreamProofESP::render();
 	NadePrediction::draw();
+	NadeHelper::draw(ImGui::GetBackgroundDrawList());
 
 	AntiAim::visualize(ImGui::GetBackgroundDrawList());
 	Visuals::hitMarker(nullptr, ImGui::GetBackgroundDrawList());
@@ -250,6 +251,7 @@ static bool __stdcall createMove(float inputSampleTime, UserCmd *cmd) noexcept
 	Misc::edgeJump(cmd);
 	Misc::blockBot(cmd, currentViewAngles);
 	Misc::fastPlant(cmd);
+	NadeHelper::run(cmd);
 
 	AntiAim::run(cmd, currentViewAngles, sendPacket);
 	Misc::AutoDefuse(cmd);

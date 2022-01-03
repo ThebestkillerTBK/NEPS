@@ -183,7 +183,7 @@ void GUI::render() noexcept
 
 	ImGui::PushStyleVar(ImGuiStyleVar_Alpha, getTransparency());
 
-	if (open && toggleAnimationEnd < 1.0f)
+	if (gui->open && toggleAnimationEnd < 1.0f)
 		ImGui::SetWindowFocus();
 
 	toggleAnimationEnd += ImGui::GetIO().DeltaTime / animationLength();
@@ -210,6 +210,7 @@ void GUI::render() noexcept
 		renderStyleWindow();
 		renderExploitsWindow();
 		renderGriefingWindow();
+		renderNadeHelperWindow();
 		renderMovementWindow();
 		renderMiscWindow();
 		renderConfigWindow();
@@ -333,6 +334,11 @@ void GUI::renderGuiStyle2() noexcept
 			renderGriefingWindow(true);
 			ImGui::EndTabItem();
 		}
+		if (ImGui::BeginTabItem("Nade Helper"))
+		{
+			renderNadeHelperWindow(true);
+			ImGui::EndTabItem();
+		}
 		if (ImGui::BeginTabItem("Movement"))
 		{
 			renderMovementWindow(true);
@@ -394,6 +400,7 @@ void GUI::renderMenuBar() noexcept
 		menuBarItem("Skin changer", window.skinChanger);
 		menuBarItem("Sound", window.sound);
 		menuBarItem("Griefing", window.griefing);
+		menuBarItem("Nade Helper", window.nadeHelper);
 		menuBarItem("Exploits", window.exploits);
 		menuBarItem("Movement", window.movement);
 		menuBarItem("Misc", window.misc);
@@ -2633,6 +2640,132 @@ void GUI::renderGriefingWindow(bool contentOnly) noexcept
 		ImGui::End();
 }
 
+void GUI::renderNadeHelperWindow(bool contentOnly) noexcept
+{
+	constexpr auto passesFilter = [](const std::wstring& str, std::wstring filter) noexcept
+	{
+		constexpr auto delimiter = L" ";
+		wchar_t* _;
+		wchar_t* token = std::wcstok(filter.data(), delimiter, &_);
+		while (token)
+		{
+			if (!std::wcsstr(str.c_str(), token))
+				return false;
+			token = std::wcstok(nullptr, delimiter, &_);
+		}
+		return true;
+	};
+	
+	if (!contentOnly)
+	{
+		if (!window.nadeHelper)
+			return;
+		ImGui::Begin("Nade Helper", &window.nadeHelper, windowFlags);
+	}
+
+	static int currentNade = 0;
+	auto& currentConfig = config->grenadeInfos[currentNade];
+
+	std::string filter = {};
+	ImGui::InputTextWithHint("##search", "Search map or nade name", &filter);
+
+	if (ImGui::BeginListBox("##nades", { 170, 355 }))
+	{
+		const std::wstring filterWide = Helpers::toUpper(Helpers::toWideString(filter));
+		for (std::size_t i = 0; i < config->grenadeInfos.size(); ++i)
+		{
+			if (filter.empty() || passesFilter(Helpers::toUpper(Helpers::toWideString(config->grenadeInfos[i].name + config->grenadeInfos[i].actMapName)), filterWide))
+			{
+				std::string nadeName = "#" + std::to_string(i) + " " + config->grenadeInfos[i].name;
+
+				if (ImGui::IsItemHovered())
+					ImGui::SetTooltip(config->grenadeInfos[i].actMapName.c_str());
+
+				if (ImGui::Selectable(nadeName.c_str(), i == currentNade))
+					currentNade = i;
+			}
+		}
+		ImGui::EndListBox();
+	}
+
+	ImGui::SameLine();
+
+	if (ImGui::BeginChild("##childnades", { 360 , 355 }, false, wndFlags2))
+	{
+		ImGui::Columns(2, nullptr, false);
+		ImGui::Checkbox("Enabled", &config->nadeHelper.bind);
+		ImGui::Separator();
+
+		ImGui::Checkbox("Only Matching Infos", &config->nadeHelper.onlyMatchingInfos);
+		ImGuiCustom::keyBind("Aim Assist", config->nadeHelper.aimAssist);
+
+		
+		ImGui::Checkbox("Silent", &config->nadeHelper.silent);
+		ImGui::Checkbox("Smoothing", &config->nadeHelper.smoothing);
+		ImGui::Checkbox("Move Assistant", &config->nadeHelper.moveAssist);
+		ImGui::Checkbox("Throw Assistant", &config->nadeHelper.throwAssist);
+		ImGui::Checkbox("Auto Throw", &config->nadeHelper.autoThrow);
+		ImGui::PushItemWidth(90.0f);
+		ImGui::InputFloat("Aim Distance", &config->nadeHelper.aimDistance, 1.0f, 10.0f, "%.0f");
+		ImGui::InputFloat("Render Distance", &config->nadeHelper.renderDistance, 1.0f, 10.0f, "%.0f");
+		ImGui::PopItemWidth();
+		ImGui::PushItemWidth(140.0f);
+		ImGui::SliderFloat("##aimsmoothing", &config->nadeHelper.aimStep, 0.0f, 1.0f, "Aim Smoothing %.4f");
+		ImGui::SliderFloat("##aimfov", &config->nadeHelper.aimFov, 0.0f, 255.0f, "Aim Fov %.2f", ImGuiSliderFlags_Logarithmic);
+
+		ImGuiCustom::colorPicker("Aim Dot", config->nadeHelper.aimDot);
+		ImGuiCustom::colorPicker("Aim Line", config->nadeHelper.aimLine);
+		ImGuiCustom::colorPicker("BG color", config->nadeHelper.infoBG);
+		ImGuiCustom::colorPicker("Text color", config->nadeHelper.infoText);
+
+		ImGui::NextColumn();
+
+		ImGui::PushItemWidth(90.0f);
+		ImGui::Combo("Nade Type", &currentConfig.gType, "Flash\0Smoke\0Molotov\0HE\0Unset\0");
+		ImGui::Combo("Throw Type", &currentConfig.tType, "Stand\0Run\0Jump\0Walk\0Run&Jump\0Walk&Jump\0Unset\0");
+		ImGui::Checkbox("RClick", &currentConfig.RClick);
+
+		ImGui::Text("Position:");
+		ImGui::Text("X:");
+		ImGui::SameLine();
+		ImGui::InputFloat("##X", &currentConfig.pos.x, 0.1f, 1.0f, "%.3f");
+		ImGui::Text("Y:");
+		ImGui::SameLine();
+		ImGui::InputFloat("##Y", &currentConfig.pos.y, 0.1f, 1.0f, "%.3f");
+		ImGui::Text("Z:");
+		ImGui::SameLine();
+		ImGui::InputFloat("##Z", &currentConfig.pos.z, 0.1f, 1.0f, "%.3f");
+
+		ImGui::Text("Angle:");
+		ImGui::Text("X:");
+		ImGui::SameLine();
+		ImGui::InputFloat("##X1", &currentConfig.angle.x, 0.1f, 1.0f, "%.3f");
+		ImGui::Text("Y:");
+		ImGui::SameLine();
+		ImGui::InputFloat("##Y1", &currentConfig.angle.y, 0.1f, 1.0f, "%.3f");
+		ImGui::PopItemWidth();
+
+		ImGui::SetNextItemWidth(120.0f);
+		ImGui::InputText("Name", &currentConfig.name, ImGuiInputTextFlags_EnterReturnsTrue);
+		ImGui::SetNextItemWidth(90.0f);
+		ImGui::InputText("Map Name", &currentConfig.actMapName, ImGuiInputTextFlags_EnterReturnsTrue);
+
+		if (ImGui::Button("Set current nade", { 70, 40 }))
+		{
+			if (interfaces->engine->isInGame() && interfaces->engine->isConnected() && localPlayer)
+			{
+				currentConfig.angle = interfaces->engine->getViewAngles();
+				currentConfig.pos = localPlayer->origin();
+				currentConfig.actMapName = interfaces->engine->getLevelName();
+			}
+		}
+	}
+	ImGui::EndChild();
+
+	if (!contentOnly)
+		ImGui::End();
+}
+
 void GUI::renderMovementWindow(bool contentOnly) noexcept
 {
 	if (!contentOnly)
@@ -2927,7 +3060,7 @@ void GUI::renderConfigWindow(bool contentOnly) noexcept
 
 	if (ImGui::BeginPopup("Config to reset"))
 	{
-		static constexpr const char *names[]{"Whole", "Aimbot", "Triggerbot", "Backtrack", "Anti-aim", "Chams", "Glow", "ESP", "Visuals", "Skin changer", "Sound", "Griefing", "Exploits", "Movement", "Misc", "Style"};
+		static constexpr const char *names[]{"Whole", "Aimbot", "Triggerbot", "Backtrack", "Anti-aim", "Chams", "Glow", "ESP", "Visuals", "Skin changer", "Sound", "Griefing", "Exploits", "Movement", "Misc", "Style", "Nade Helper"};
 		for (int i = 0; i < IM_ARRAYSIZE(names); i++)
 		{
 			if (i == 1) ImGui::Separator();
@@ -2952,6 +3085,7 @@ void GUI::renderConfigWindow(bool contentOnly) noexcept
 				case 13: config->movement = { }; break;
 				case 14: config->misc = { }; break;
 				case 15: config->style = { }; updateColors(); break;
+				case 16: config->nadeHelper = { }; config->grenadeInfos = { };  break;
 				}
 			}
 		}

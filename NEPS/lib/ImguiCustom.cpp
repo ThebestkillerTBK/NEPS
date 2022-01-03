@@ -889,3 +889,30 @@ void ImGuiCustom::textEllipsisInTableCell(const char* text) noexcept
 	ImGui::ItemSize(textSize, 0.0f);
 	ImGui::ItemAdd(bb, 0);
 }
+
+void ImGuiCustom::AddRing3D(ImDrawList* drawList, const Vector& pos, float radius, uint16_t points, ImU32 color, float thickness) noexcept
+{
+	float step = (float)M_PI * 2.0f / points;
+
+	ImVec2 start2d, end2d;
+
+	for (float a = 0; a < (M_PI * 2.0f); a += step)
+	{
+		Vector start(radius * cosf(a) + pos.x, radius * sinf(a) + pos.y, pos.z);
+		Vector end(radius * cosf(a + step) + pos.x, radius * sinf(a + step) + pos.y, pos.z);
+
+		Vector start22d(start2d.x, start2d.y);
+		Vector end22d(end2d.x, end2d.y);
+
+		if (Helpers::worldToScreen(start, start2d) && Helpers::worldToScreen(end, end2d))
+		{
+			start22d.x = start2d.x;
+			start22d.y = start2d.y;
+
+			end22d.x = end2d.x;
+			end22d.y = end2d.y;
+
+			drawList->AddLine(ImVec2(start22d.x, start22d.y), ImVec2(end22d.x, end22d.y), color, thickness);
+		}
+	}
+}

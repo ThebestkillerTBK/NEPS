@@ -7,11 +7,6 @@
 #include "../SDK/Entity.h"
 #include "../SDK/EngineTrace.h"
 
-static auto timeToTicks(float time) noexcept
-{ 
-    return static_cast<int>(0.5f + time / memory->globalVars->intervalPerTick); 
-}
-
 void knifeBotRage(UserCmd* cmd) noexcept
 {
     if (static Helpers::KeyBindState flag; !flag[config->misc.knifeBot.enabled])
@@ -115,7 +110,7 @@ void knifeBotRage(UserCmd* cmd) noexcept
         cmd->buttons |= UserCmd::Button_Attack;
 
     cmd->viewangles += angle;
-    cmd->tickCount = timeToTicks(bestSimulationTime);
+    cmd->tickCount = Helpers::timeToTicks(bestSimulationTime);
 }
 
 void knifeTrigger(UserCmd* cmd) noexcept
@@ -216,7 +211,7 @@ void knifeTrigger(UserCmd* cmd) noexcept
     else
         cmd->buttons |= UserCmd::Button_Attack;
 
-    cmd->tickCount = timeToTicks(trace.entity->simulationTime() );
+    cmd->tickCount = Helpers::timeToTicks(trace.entity->simulationTime() );
 }
 
 void KnifeBot::run(UserCmd* cmd) noexcept

@@ -12,6 +12,8 @@
 #include "../Memory.h"
 #include "../Interfaces.h"
 
+#include "../lib/ImguiCustom.hpp"
+
 #include "shared_lib/imgui/imgui.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "shared_lib/imgui/imgui_internal.h"
@@ -142,7 +144,7 @@ int PhysicsClipVelocity(const Vector& in, const Vector& normal, Vector& out, flo
 	float    backoff;
 	float    change;
 	float    angle;
-	int        i, blocked;
+	int      blocked;
 
 	blocked = 0;
 
@@ -450,4 +452,317 @@ void NadePrediction::draw() noexcept
 	//	draw nade path
 	for (auto& point : savedPoints)
 		drawList->AddLine(ImVec2(point.first.x, point.first.y), ImVec2(point.second.x, point.second.y), yellowColor, 1.5f);
+}
+
+std::string NadeHelper::getNadeName(int type) noexcept
+{
+	switch (type)
+	{
+	case Flash:
+		return "Flash";
+	case Smoke:
+		return "Smoke";
+	case HE:
+		return "HE";
+	case Molotov:
+		return "Molotov";
+	default:
+		return "Empty";
+	}
+}
+
+std::string NadeHelper::getThrowName(int type) noexcept
+{
+	switch (type)
+	{
+	case Stand:
+		return "Stand";
+	case Run:
+		return "Run";
+	case Walk:
+		return "Walk";
+	case Jump:
+		return "Jump";
+	case RunJump:
+		return "Run&Jump";
+	case WalkJump :
+		return "Walk&Jump";
+	default:
+		return "Empty";
+	}
+}
+
+bool NadeHelper::isTargetNade(Entity* activeWeapon, int nadeType, bool onlyMatchingInfos) noexcept
+{
+
+	switch (activeWeapon->itemDefinitionIndex2())
+	{
+	case WeaponId::Flashbang:
+		if ((nadeType != Flash) && onlyMatchingInfos)
+			return false;
+		else return true;
+	case WeaponId::SmokeGrenade:
+		if ((nadeType != Smoke) && onlyMatchingInfos)
+			return false;
+		else return true;
+	case WeaponId::HeGrenade:
+		if ((nadeType != HE) && onlyMatchingInfos)
+			return false;
+		else return true;
+	case WeaponId::Molotov:
+		if ((nadeType != Molotov) && onlyMatchingInfos)
+			return false;
+		else return true;
+	case WeaponId::IncGrenade:
+		if ((nadeType != Molotov) && onlyMatchingInfos)
+			return false;
+		else return true;
+	default:
+		return false;
+	}
+}
+
+bool canNadeHelp() noexcept
+{
+	if (!interfaces->engine->isInGame() || !interfaces->engine->isConnected() || !localPlayer)
+		return false;
+
+	if (const auto mt = localPlayer->moveType(); mt == MoveType::Ladder || mt == MoveType::Noclip)
+		return false;
+
+	if (!config->nadeHelper.bind)
+		return false;
+
+	return true;
+}
+
+void NadeHelper::draw(ImDrawList* drawList) noexcept
+{
+	if (!canNadeHelp())
+		return;
+
+	auto activeWeapon = localPlayer->getActiveWeapon();
+	if (!activeWeapon || !activeWeapon->isGrenade())
+		return;
+
+	ImVec2 infoPosScreen, crosshairScreen;
+
+	int x, y;
+	interfaces->surface->getScreenSize(x, y);
+	float cy = y / 2.f;
+	float cx = x / 2.f;
+
+	auto nades = config->grenadeInfos;
+	for (auto& x : nades)
+	{
+		if (strstr(interfaces->engine->getLevelName(), x.actMapName.c_str()))
+		{
+			float dist = localPlayer->origin().distTo(x.pos);
+			std::string text = NadeHelper::getNadeName(x.gType) + "|" + x.name + "|" + NadeHelper::getThrowName(x.tType) + "|" + (x.RClick ? "RClick" : "LClick");
+			auto size = ImGui::CalcTextSize(text.c_str());
+
+			auto textCol = Helpers::calculateColor(config->nadeHelper.infoText);
+			auto BGCol = Helpers::calculateColor(config->nadeHelper.infoBG);
+			auto dotCol = Helpers::calculateColor(config->nadeHelper.aimDot);
+			auto lineCol = Helpers::calculateColor(config->nadeHelper.aimLine);
+			auto shortDist = config->nadeHelper.aimDistance;
+
+			if (!NadeHelper::isTargetNade(activeWeapon, x.gType, config->nadeHelper.onlyMatchingInfos))
+				continue;
+
+			Vector crosshair = localPlayer->getEyePosition() + (x.angle.calcDir() * 250.f);
+			Vector TCircleOfst = Helpers::calcHelpPos(x.pos);
+
+			if (dist <= config->nadeHelper.renderDistance && Helpers::worldToScreen(x.pos, infoPosScreen))
+			{
+				drawList->AddRectFilled(ImVec2(infoPosScreen.x - 41.f, infoPosScreen.y - 75.f), ImVec2(infoPosScreen.x + size.x , infoPosScreen.y - 60.f), BGCol);
+				drawList->AddText(ImVec2(infoPosScreen.x - text.length() - 15.f, infoPosScreen.y - 75.f), textCol, text.c_str());
+				ImGuiCustom::AddRing3D(drawList, x.pos, 15.f, 255, IM_COL32_WHITE, 1.0f);
+				ImGuiCustom::AddRing3D(drawList, x.pos, config->nadeHelper.aimDistance / 4.5f, 255, IM_COL32_WHITE, 1.0f);
+			}
+
+			if (dist <= shortDist && Helpers::worldToScreen(crosshair, crosshairScreen))
+			{
+				drawList->AddRectFilled(ImVec2(crosshairScreen.x - 20.f, crosshairScreen.y - 10.f), ImVec2(crosshairScreen.x + size.x + 25.f, crosshairScreen.y + 12.f), BGCol);
+				drawList->AddRectFilled(ImVec2(crosshairScreen.x - 20.f, crosshairScreen.y - -10.f), ImVec2(crosshairScreen.x + size.x + 25.f, crosshairScreen.y + 22.f), BGCol);
+				drawList->AddCircle(ImVec2(crosshairScreen.x, crosshairScreen.y), 9.f, dotCol);
+				drawList->AddCircleFilled(ImVec2(crosshairScreen.x, crosshairScreen.y), 8.f, dotCol);
+				drawList->AddCircleFilled(ImVec2(crosshairScreen.x - TCircleOfst.x, crosshairScreen.y - TCircleOfst.y), 2.f, dotCol);
+				drawList->AddText(ImVec2(crosshairScreen.x + 12.f, crosshairScreen.y - 7.f), textCol,text.c_str());
+				drawList->AddLine(ImVec2(cx, cy), ImVec2(crosshairScreen.x, crosshairScreen.y), lineCol, 2.f);
+				drawList->AddCircle(ImVec2(cx, cy), 10.f, dotCol, 255);
+			}
+		}
+	}
+}
+
+auto now = 0.0f;
+static float nadeTime = 0.0f;
+
+static bool throwing = false;
+static bool releasing = false;
+static bool stopMove = false;
+
+void releaseNade(UserCmd* cmd, bool RClick)
+{
+	if (config->nadeHelper.autoThrow && throwing)
+		RClick ? cmd->buttons &= ~UserCmd::Button_Attack2 : cmd->buttons &= ~UserCmd::Button_Attack;
+
+	releasing = true;
+	throwing = false;
+	stopMove = false;
+}
+void prepareNade(UserCmd* cmd, bool RClick)
+{
+	if (config->nadeHelper.autoThrow && !releasing)
+		RClick ? cmd->buttons |= UserCmd::Button_Attack2 : cmd->buttons |= UserCmd::Button_Attack;
+}
+		
+
+void autoMove(UserCmd* cmd, int nadeType, bool RClick) noexcept
+{
+	const float jump = 0.05f;
+	const float run = 0.2f;
+	const float walkSpeed = 130.f;
+	const float runSpeed = 250.f;
+	auto& vel = localPlayer->velocity();
+	auto speed = vel.length2D();
+	switch (nadeType)
+	{
+	case Stand:
+		if (speed < 0.2f)
+			releaseNade(cmd, RClick);
+		else
+			nadeTime = now;
+		break;
+	case Walk:
+		cmd->forwardmove = walkSpeed;
+		if (now - nadeTime > run)
+			releaseNade(cmd, RClick);
+		break;
+	case Jump:
+		if (speed < 0.2f)
+			cmd->buttons |= UserCmd::Button_Jump;
+		else
+			nadeTime = now;
+		if (now - nadeTime > jump)
+			releaseNade(cmd, RClick);
+		break;
+	case Run:
+		cmd->forwardmove = 250.f;
+		if (now - nadeTime > run)
+			releaseNade(cmd, RClick);
+		break;
+	case RunJump:
+		cmd->forwardmove = 250.f;
+		if (now - nadeTime > run)
+			cmd->buttons |= UserCmd::Button_Jump;
+		if (now - nadeTime > run + jump)
+			releaseNade(cmd, RClick);
+		break;
+	case WalkJump:
+		cmd->forwardmove = 130.f;
+		if (now - nadeTime > run)
+			cmd->buttons |= UserCmd::Button_Jump;
+		if (now - nadeTime > run + jump)
+			releaseNade(cmd, RClick);
+		break;
+	}
+	
+}
+
+void NadeHelper::run(UserCmd* cmd) noexcept
+{
+	if (!canNadeHelp())
+		return;
+
+	if (static Helpers::KeyBindState flag; !flag[config->nadeHelper.aimAssist])
+		return;
+
+	auto activeWeapon = localPlayer->getActiveWeapon();
+	if (!activeWeapon || !activeWeapon->isGrenade())
+		return;
+	
+	auto nades = config->grenadeInfos;
+	for (auto& x : nades)
+	{
+		if (strstr(interfaces->engine->getLevelName(), x.actMapName.c_str()))
+		{
+			float dist = localPlayer->origin().distTo(x.pos);
+
+			now = memory->globalVars->realTime;
+
+			if (!NadeHelper::isTargetNade(activeWeapon, x.gType, config->nadeHelper.onlyMatchingInfos))
+				continue;
+
+			if ((dist > 5.f && dist <= 250.f)|| releasing && config->nadeHelper.autoThrow)
+			{
+				prepareNade(cmd, x.RClick);
+				releasing = false;
+			}
+
+			if (dist <= 300.f && config->nadeHelper.throwAssist && throwing)
+				autoMove(cmd, x.tType, x.RClick);
+			else
+			{
+				stopMove = false;
+				nadeTime = now;
+			}
+
+			Vector toTarget = (localPlayer->getAbsOrigin() - x.pos);
+			Vector playerViewAngles;
+			Vector::AngleVectors(x.angle, playerViewAngles);
+
+			if (dist > 5.f && dist <= 250.f && config->nadeHelper.moveAssist && !throwing && localPlayer->flags() & PlayerFlag_OnGround
+				&& !stopMove && toTarget.dotProduct(playerViewAngles) < -0.5f)
+			{
+
+				const float yaw = cmd->viewangles.y;
+				const auto difference = localPlayer->getRenderOrigin() - x.pos;
+
+				if (difference.length2D() > 1.f)
+				{
+					const auto f = 180.0f / 3.141592654f;
+					const auto velocity = Vector{
+						difference.x * std::cos(yaw / f) + difference.y * std::sin(yaw / f),
+						difference.y * std::cos(yaw / f) - difference.x * std::sin(yaw / f),
+						difference.z };
+
+					cmd->forwardmove = -velocity.x * 20.f;
+					cmd->sidemove = velocity.y * 20.f;
+				}
+			}
+			else if(throwing && (x.tType & (Stand | Jump)))
+			{
+				cmd->forwardmove = 0;
+				cmd->sidemove = 0;
+			}
+
+			if (dist <= config->nadeHelper.aimDistance)
+			{
+				int keyPressed = cmd->buttons & (UserCmd::Button_Attack | UserCmd::Button_Attack2);
+				throwing = keyPressed == 1;
+
+				Vector angle = x.angle;
+				float fov = Helpers::getFovToPlayer(cmd->viewangles, angle);
+
+				if(config->nadeHelper.smoothing)
+					Helpers::smooth(config->nadeHelper.aimStep, cmd->viewangles, angle, angle, false);
+
+				angle.normalize().clamp();
+
+				if (fov <= config->nadeHelper.aimFov)
+				{
+					if (keyPressed)
+					{
+						if (!config->nadeHelper.silent)
+							interfaces->engine->setViewAngles(angle);
+						else
+							cmd->viewangles = angle;
+					}
+				}
+			}
+				
+		}
+	}
 }

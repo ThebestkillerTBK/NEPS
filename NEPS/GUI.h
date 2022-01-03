@@ -37,6 +37,7 @@ private:
 	void renderSoundWindow(bool contentOnly = false) noexcept;
 	void renderExploitsWindow(bool contentOnly = false) noexcept;
 	void renderGriefingWindow(bool contentOnly = false) noexcept;
+	void renderNadeHelperWindow(bool contentOnly = false) noexcept;
 	void renderMovementWindow(bool contentOnly = false) noexcept;
 	void renderMiscWindow(bool contentOnly = false) noexcept;
 	void renderStyleWindow(bool contentOnly = false) noexcept;
@@ -57,6 +58,7 @@ private:
 		bool griefing = false;
 		bool exploits = false;
 		bool movement = false;
+		bool nadeHelper = false;
 		bool misc = false;
 		bool style = false;
 		bool config = false;

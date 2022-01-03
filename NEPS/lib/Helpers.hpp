@@ -52,13 +52,17 @@ namespace Helpers
 	constexpr auto normalizeDeg = [](float a) noexcept { return std::isfinite(a) ? std::remainder(a, 360.0f) : 0.0f; };
 	constexpr auto normalizeRad = [](float a) noexcept { return std::isfinite(a) ? std::remainder(a, PI * 2) : 0.0f; };
 
-	bool IsPlayerBehind(Entity* player) noexcept;
+	int random(const int& min, const int& max) noexcept;
+	float random(const float& min, const float& max) noexcept;
 
+	float getFovToPlayer(const Vector& current_angles, const Vector& aim_angles);
+	void smooth(const float& amount, const Vector& current_angles, const Vector& aim_angles, Vector& angles, const bool& humanize);
+	Vector calcHelpPos(Vector target) noexcept;
+	bool IsPlayerBehind(Entity* player) noexcept;
 	Entity* getTargetNoWall(Vector vangle, bool teamDamage, float fov1, float dist1);
 
 	std::array<float, 3U> rgbToHsv(float r, float g, float b) noexcept;
 	std::array<float, 3U> hsvToRgb(float h, float s, float v) noexcept;
-
 	void convertHSVtoRGB(float h, float s, float v, float& outR, float& outG, float& outB) noexcept;
 
 	void healthColor(float fraction, float& outR, float& outG, float& outB) noexcept;

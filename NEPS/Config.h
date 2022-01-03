@@ -9,6 +9,7 @@
 #include <shared_lib/imgui/imgui.h>
 #include "Hacks/SkinChanger.h"
 #include "ConfigStructs.h"
+#include "Hacks/GrenadePrediction.h"
 
 class Config
 {
@@ -567,6 +568,29 @@ public:
 		bool allCvar = false;
 		bool goFestive = true;
 	} misc;
+
+	std::array<GrenadeInfo, 500> grenadeInfos;
+
+	struct NadeHelper
+	{
+		bool bind = false;
+		bool onlyMatchingInfos = true;
+		KeyBind aimAssist;
+		float aimStep = 0.5f;
+		float aimDistance = 70.f;
+		float renderDistance = 500.f;
+		float aimFov = 45.f;
+		bool silent = false;
+		bool smoothing = true;
+		bool moveAssist = false;
+		bool throwAssist = false;
+		bool autoRelease = false;
+		bool autoThrow = false;
+		Color4 infoBG = { 0, 0, 0, 1 };
+		Color4 infoText = { 1, 1, 1, 1 };
+		Color4 aimDot = { 0.1f, 0.1f, 0.8f, 1 };
+		Color4 aimLine = { 0.8f, 0.8f, 0.8f, 1 };
+	} nadeHelper;
 
 	void scheduleFontLoad(const std::string &name) noexcept;
 	bool loadScheduledFonts() noexcept;

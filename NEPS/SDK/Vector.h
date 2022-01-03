@@ -315,7 +315,7 @@ struct Vector
 
 	float x, y, z;
 
-	void clamp() {
+	 constexpr Vector& clamp() {
 		while (y > 180)
 			y -= 360;
 		while (y < -180)
@@ -325,6 +325,8 @@ struct Vector
 			x = 89.f;
 		else if (x < -89.f)
 			x = -89.f;
+
+		return *this;
 	}
 
 	static void vectorAngles(const Vector forward, Vector angles)
@@ -377,6 +379,24 @@ struct Vector
 		angles->x = pitch;
 		angles->y = yaw;
 		angles->z = 0.f;
+	}
+
+	auto calcDir()
+	{
+		Vector vForward;
+		float	sp, sy, cp, cy;
+
+		sy = sin(DEG2RAD(y));
+		cy = cos(DEG2RAD(y));
+
+		sp = sin(DEG2RAD(x));
+		cp = cos(DEG2RAD(x));
+
+		vForward.x = cp * cy;
+		vForward.y = cp * sy;
+		vForward.z = -sp;
+
+		return vForward;
 	}
 
 	static auto calcAngle(const Vector src, const Vector dst)

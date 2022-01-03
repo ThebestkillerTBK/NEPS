@@ -349,6 +349,13 @@ static void from_json(const json &j, ImVec2 &v)
 	read(j, "Y", v.y);
 }
 
+static void from_json(const json &j, Vector &v)
+{
+	read(j, "X", v.x);
+	read(j, "Y", v.y);
+	read(j, "Z", v.z);
+}
+
 static void from_json(const json &j, Config::Aimbot::AimbotOverride &v)
 {
 	read<value_t::object>(j, "Bind", v.bind);
@@ -878,6 +885,37 @@ static void from_json(const json &j, Config::Griefing &g)
 	read(j, "Auto disconnect", g.autoDisconnect);
 }
 
+static void from_json(const json &j, GrenadeInfo &p)
+{
+	read(j, "Nade Type", p.gType);
+	read<value_t::object>(j, "Position", p.pos);
+	read<value_t::object>(j, "Angle", p.angle);
+	read(j, "Throw Type", p.tType);
+	read(j, "RClick", p.RClick);
+	read<value_t::string>(j, "Name", p.name);
+	read<value_t::string>(j, "Map Name", p.actMapName);
+}
+
+static void from_json(const json &j, Config::NadeHelper &n)
+{
+	read(j, "Enabled", n.bind);
+	read(j, "Only Matching Infos", n.onlyMatchingInfos);
+	read<value_t::object>(j, "Aim Assist", n.aimAssist);
+	read(j, "Aim Step", n.aimStep);
+	read(j, "Aim Distance", n.aimDistance);
+	read(j, "Render Distance", n.renderDistance);
+	read(j, "Aim Fov", n.aimFov);
+	read(j, "Silent", n.silent);
+	read(j, "Smoothing", n.smoothing);
+	read(j, "Move Assist", n.moveAssist);
+	read(j, "Throw Assist", n.throwAssist);
+	read(j, "Auto Throw", n.autoThrow);
+	read<value_t::object>(j, "BG color", n.infoBG);
+	read<value_t::object>(j, "Text color", n.infoText);
+	read<value_t::object>(j, "Aim Dot", n.aimDot);
+	read<value_t::object>(j, "Aim Line", n.aimLine);
+}
+
 static void from_json(const json &j, Config::Griefing::Reportbot &r)
 {
 	read(j, "Enabled", r.enabled);
@@ -950,6 +988,8 @@ bool Config::load(const char8_t *name, bool incremental) noexcept
 	read<value_t::object>(j, "Exploits", exploits);
 	read<value_t::object>(j, "Movement", movement);
 	read<value_t::object>(j, "Griefing", griefing);
+	read<value_t::object>(j, "Nade Helper", nadeHelper);
+	read(j, "Nades", grenadeInfos);
 
 	return true;
 }
@@ -1136,6 +1176,13 @@ static void to_json(json &j, const ImVec2 &o, const ImVec2 &dummy = {})
 {
 	WRITE("X", x);
 	WRITE("Y", y);
+}
+
+static void to_json(json &j, const Vector &o, const Vector&dummy = {})
+{
+	WRITE("X", x);
+	WRITE("Y", y);
+	WRITE("Z", z);
 }
 
 static void to_json(json &j, const Config::Aimbot::AimbotOverride &o, const Config::Aimbot::AimbotOverride &dummy = {})
@@ -1519,6 +1566,39 @@ static void to_json(json &j, const Config::Griefing &o)
 	WRITE("Chat Spammer", chatSpammer);
 }
 
+static void to_json(json& j, const GrenadeInfo& o, const GrenadeInfo& dummy = {})
+{
+	WRITE("Nade Type", gType);
+	WRITE("Position", pos);
+	WRITE("Angle", angle);
+	WRITE("Throw Type", tType);
+	WRITE("RClick", RClick);
+	WRITE("Name", name);
+	WRITE("Map Name", actMapName);
+}
+
+static void to_json(json& j, const Config::NadeHelper& o)
+{
+	const Config::NadeHelper dummy;
+
+	WRITE("Enabled", bind);
+	WRITE("Only Matching Infos", onlyMatchingInfos);
+	WRITE("Aim Assist", aimAssist);
+	WRITE("Aim Step", aimStep);
+	WRITE("Aim Distance", aimDistance);
+	WRITE("Render Distance", renderDistance);
+	WRITE("Aim Fov", aimFov);
+	WRITE("Silent", silent);
+	WRITE("Smoothing", smoothing);
+	WRITE("Move Assist", moveAssist);
+	WRITE("Throw Assist", throwAssist);
+	WRITE("Auto Throw", autoThrow);
+	WRITE("BG color", infoBG);
+	WRITE("Text color", infoText);
+	WRITE("Aim Dot", aimDot);
+	WRITE("Aim Line", aimLine);
+}
+
 static void to_json(json &j, const Config::Movement &o)
 {
 	const Config::Movement dummy;
@@ -1759,6 +1839,8 @@ void Config::save(size_t id) const noexcept
 		j["Exploits"] = exploits;
 		j["Movement"] = movement;
 		j["Griefing"] = griefing;
+		j["Nade Helper"] = nadeHelper;
+		j["Nades"] = grenadeInfos;
 
 		removeEmptyObjects(j);
 		out << std::setw(2) << j;
@@ -1803,6 +1885,8 @@ void Config::reset() noexcept
 	style = {};
 	exploits = {};
 	griefing = {};
+	nadeHelper = {};
+	grenadeInfos = {};
 	movement = {};
 	misc = {};
 }
@@ -1958,3 +2042,5 @@ Config::AntiAim &Config::AntiAim::getRelevantConfig() noexcept
 	} else
 		return config->antiAim[categories[3]];
 }
+
+

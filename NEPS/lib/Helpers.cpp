@@ -10,6 +10,91 @@
 #include <shared_lib/imgui/imgui_internal.h>
 #include <fstream>
 
+int Helpers::random(const int& min, const int& max) noexcept { return rand() % (max - min + 1) + min; }
+float Helpers::random(const float& min, const float& max) noexcept { return ((max - min) * ((float)rand() / RAND_MAX)) + min; }
+
+float Helpers::getFovToPlayer(const Vector& current_angles, const Vector& aim_angles)
+{
+	Vector delta = aim_angles - current_angles;
+	delta.normalize().clamp();
+
+	return sqrtf(powf(delta.x, 2.0f) + powf(delta.y, 2.0f));
+}
+
+void Helpers::smooth(const float& amount, const Vector& current_angles, const Vector& aim_angles, Vector& angles, const bool& humanize)
+{
+	angles = aim_angles;
+	angles.normalize().clamp();
+
+	auto corrected_amount = amount;
+	auto tickrate = 1.0f / memory->globalVars->intervalPerTick;
+	if (tickrate != 64.f)
+	{
+		//shooth 4
+		//64 - 4
+		//128 - x
+		//x = 128*4/64
+		//x = 8
+
+		corrected_amount = tickrate * amount / 64.f;
+	}
+
+	if (corrected_amount < 1.1f)
+		return;
+
+	Vector aim_vector;
+	Vector::AngleVectors(aim_angles, aim_vector);
+
+	Vector current_vector;
+	Vector::AngleVectors(current_angles, current_vector);
+
+	auto delta = aim_vector - current_vector;
+	if (humanize)
+	{
+		delta.y += Helpers::random(-0.01f, 0.01f);
+		delta.z += Helpers::random(-0.01f, 0.01f);
+	}
+
+	const auto smoothed = current_vector + delta / corrected_amount;
+
+	Vector::vectorAngles(smoothed, angles);
+	angles.normalize().clamp();
+}
+
+Vector Helpers::calcHelpPos(Vector target) noexcept
+{
+
+	if (!localPlayer)
+		return Vector(0, 0, 0);
+
+	Vector vAngle;
+
+	interfaces->engine->getViewAngles(vAngle);
+
+	float range = 5.f;
+
+	float r_1, r_2;
+	float x_1, y_1;
+
+	Vector LocalRendOrig = localPlayer->getRenderOrigin();
+	Vector LocalViewOfst = localPlayer->viewOffset();
+
+	Vector vEyeOrigin = LocalRendOrig + LocalViewOfst;
+
+	r_1 = -(target.y - vEyeOrigin.y);
+	r_2 = target.x - vEyeOrigin.x;
+	float Yaw = vAngle.y - 90.0f;
+
+	float yawToRadian = Yaw * (float)(M_PI / 180.0F);
+	x_1 = (float)(r_2 * (float)cos((double)(yawToRadian)) - r_1 * sin((double)(yawToRadian))) / 20.f;
+	y_1 = (float)(r_2 * (float)sin((double)(yawToRadian)) + r_1 * cos((double)(yawToRadian))) / 20.f;
+
+	x_1 *= range;
+	y_1 *= range;
+
+	return Vector(x_1, y_1, 0);
+}
+
 bool Helpers::IsPlayerBehind(Entity* player) noexcept
 {
 	Vector pOrigin = player->getAbsOrigin();
