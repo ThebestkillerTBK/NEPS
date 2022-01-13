@@ -741,22 +741,25 @@ void NadeHelper::run(UserCmd* cmd) noexcept
 			if (dist <= config->nadeHelper.aimDistance)
 			{
 				int keyPressed = cmd->buttons & (UserCmd::Button_Attack | UserCmd::Button_Attack2);
-				throwing = keyPressed == 1;
+				throwing = keyPressed;
 
 				Vector angle = x.angle;
-				float fov = Helpers::getFovToPlayer(cmd->viewangles, angle);
-
-				if(config->nadeHelper.smoothing)
-					Helpers::smooth(config->nadeHelper.aimStep, cmd->viewangles, angle, angle, false);
 
 				angle.normalize().clamp();
+
+				float fov = Helpers::getFovToPlayer(cmd->viewangles, angle);
 
 				if (fov <= config->nadeHelper.aimFov)
 				{
 					if (keyPressed)
 					{
 						if (!config->nadeHelper.silent)
+						{
+							if (config->nadeHelper.smoothing)
+								Helpers::smooth(config->nadeHelper.aimStep, cmd->viewangles, angle, angle, false);
+
 							interfaces->engine->setViewAngles(angle);
+						}
 						else
 							cmd->viewangles = angle;
 					}
