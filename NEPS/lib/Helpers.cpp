@@ -26,39 +26,23 @@ void Helpers::smooth(const float& amount, const Vector& current_angles, const Ve
 	angles = aim_angles;
 	angles.normalize().clamp();
 
-	auto corrected_amount = amount;
 	auto tickrate = 1.0f / memory->globalVars->intervalPerTick;
-	if (tickrate != 64.f)
-	{
-		//shooth 4
-		//64 - 4
-		//128 - x
-		//x = 128*4/64
-		//x = 8
-
-		corrected_amount = tickrate * amount / 64.f;
-	}
+	auto corrected_amount = tickrate * amount / 64.f;
 
 	if (corrected_amount < 1.1f)
 		return;
 
-	Vector aim_vector;
-	Vector::AngleVectors(aim_angles, aim_vector);
+	auto delta = Helpers::calculateRelativeAngle(current_angles, aim_angles, Vector{});
 
-	Vector current_vector;
-	Vector::AngleVectors(current_angles, current_vector);
-
-	auto delta = aim_vector - current_vector;
 	if (humanize)
 	{
 		delta.y += Helpers::random(-0.01f, 0.01f);
 		delta.z += Helpers::random(-0.01f, 0.01f);
 	}
 
-	const auto smoothed = current_vector + delta / corrected_amount;
+	auto smoothed = current_angles + delta / corrected_amount;
 
-	Vector::vectorAngles(smoothed, angles);
-	angles.normalize().clamp();
+	smoothed.normalize().clamp();
 }
 
 Vector Helpers::calcHelpPos(Vector target) noexcept

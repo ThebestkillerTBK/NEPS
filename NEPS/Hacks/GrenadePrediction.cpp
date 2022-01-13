@@ -671,6 +671,11 @@ void autoMove(UserCmd* cmd, int nadeType, bool RClick) noexcept
 	
 }
 
+void movement(UserCmd* cmd) noexcept
+{
+
+}
+
 void NadeHelper::run(UserCmd* cmd) noexcept
 {
 	if (!canNadeHelp())
@@ -689,7 +694,7 @@ void NadeHelper::run(UserCmd* cmd) noexcept
 		if (strstr(interfaces->engine->getLevelName(), x.actMapName.c_str()))
 		{
 			float dist = localPlayer->origin().distTo(x.pos);
-
+			/*
 			now = memory->globalVars->realTime;
 
 			if (!NadeHelper::isTargetNade(activeWeapon, x.gType, config->nadeHelper.onlyMatchingInfos))
@@ -762,6 +767,36 @@ void NadeHelper::run(UserCmd* cmd) noexcept
 						}
 						else
 							cmd->viewangles = angle;
+					}
+				}
+			}
+			*/
+
+
+			if (dist <= config->nadeHelper.aimDistance)
+			{
+				int keyPressed = cmd->buttons & (UserCmd::Button_Attack | UserCmd::Button_Attack2);
+				Vector angle = x.angle;
+
+				float fov = Helpers::getFovToPlayer(cmd->viewangles, angle);
+
+				if (fov <= config->nadeHelper.aimFov)
+				{
+					if (keyPressed)
+					{
+						if (!config->nadeHelper.silent)
+						{
+							if (config->nadeHelper.smoothing)
+								Helpers::smooth(config->nadeHelper.aimStep, cmd->viewangles, angle, angle, false);
+
+							interfaces->engine->setViewAngles(angle);
+						}
+						else
+						{
+							cmd->viewangles.x = angle.x;
+							cmd->viewangles.y = angle.y;
+						}
+							
 					}
 				}
 			}
