@@ -544,6 +544,7 @@ public:
 		{
 			bool enabled = false;
 			bool noTitleBar = false;
+			bool progressBars = true;
 		} teamDamageList;
 
 		KeyBind prepareRevolver;

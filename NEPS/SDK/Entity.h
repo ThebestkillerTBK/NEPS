@@ -282,7 +282,7 @@ public:
 
 	int isChokingPackets() noexcept { return simulationTime() == oldSimulationTime(); };
 
-	bool lbyUpdate(float &nextUpdate) noexcept
+	bool trackLbyUpdate(float &nextUpdate) noexcept
 	{
 		if (!isPlayer())
 			return false;
