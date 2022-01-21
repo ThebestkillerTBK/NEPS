@@ -780,9 +780,6 @@ static void from_json(const json &j, Config::Misc::KnifeBot &ff)
 	read<value_t::object>(j, "Enabled", ff.enabled);
 	read(j, "Friendly", ff.friendly);
 	read(j, "Aimbot", ff.aimbot);
-	read(j, "Enabled", tdl.enabled);
-	read(j, "No Title Bar", tdl.noTitleBar);
-	read(j, "Progress Bars", tdl.progressBars);
 }
 
 static void from_json(const json& j, Config::Misc::StatusBar &s)
@@ -799,10 +796,11 @@ static void from_json(const json& j, Config::Misc::DamageList& dl)
 	read(j, "No Title Bar", dl.noTitleBar);
 }
 
-static void from_json(const json& j, Config::Misc::TeamDamageList& dl)
+static void from_json(const json& j, Config::Misc::TeamDamageList& tdl)
 {
-	read(j, "Enabled", dl.enabled);
-	read(j, "No Title Bar", dl.noTitleBar);
+	read(j, "Enabled", tdl.enabled);
+	read(j, "No Title Bar", tdl.noTitleBar);
+	read(j, "Progress Bars", tdl.progressBars);
 }
 
 static void from_json(const json &j, Config::Misc &m)
