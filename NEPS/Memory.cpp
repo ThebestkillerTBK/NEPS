@@ -32,7 +32,7 @@ Memory::Memory() noexcept
 	lineGoesThroughSmoke = relativeToAbsolute<decltype(lineGoesThroughSmoke)>(MemorySearch::findPattern("client", "\xE8????\x8B\x4C\x24\x30\x33\xD2") + 1);
 	smokeHandles = *reinterpret_cast<decltype(smokeHandles)*>(std::uintptr_t(lineGoesThroughSmoke) + 46);
 	cameraThink = MemorySearch::findPattern("client", "\x85\xC0\x75\x30\x38\x86");
-	invertoryBlock = MemorySearch::findPattern("client", "\x84\xC0\x75\x04\xB0\x01\x5E") - 2;
+	invertoryBlock = MemorySearch::findPattern("client", "\x84\xC0\x75\x05\xB0\x01\x5F");
 	acceptMatch = reinterpret_cast<decltype(acceptMatch)>(MemorySearch::findPattern("client", "\x55\x8B\xEC\x83\xE4\xF8\x8B\x4D\x08\xBA????\xE8????\x85\xC0\x75\x12"));
 	getSequenceActivity = reinterpret_cast<decltype(getSequenceActivity)>(MemorySearch::findPattern("client", "\x55\x8B\xEC\x53\x8B\x5D\x08\x56\x8B\xF1\x83"));
 	isOtherEnemy = relativeToAbsolute<decltype(isOtherEnemy)>(MemorySearch::findPattern("client", "\x8B\xCE\xE8????\x02\xC0") + 3);
