@@ -536,13 +536,6 @@ void Misc::stealNames() noexcept
 
 	static std::vector<int> stolenIds;
 
-	static float previousTime = memory->globalVars->realTime;
-	if (memory->globalVars->realTime < previousTime + 0.3f)
-		return;
-
-	previousTime = memory->globalVars->realTime;
-
-
 	for (int i = 1; i <= memory->globalVars->maxClients; ++i)
 	{
 		const auto entity = interfaces->entityList->getEntity(i);
@@ -652,12 +645,13 @@ void Misc::autoJumpBug(UserCmd* cmd) noexcept
 	if (!localPlayer || !localPlayer->isAlive())
 		return;
 
-	if (localPlayer->moveType() == MoveType::Noclip || localPlayer->moveType() == MoveType::Ladder)
+	if (const auto mt = localPlayer->moveType(); mt == MoveType::Noclip || mt == MoveType::Ladder)
 		return;
 
-	if (!(EnginePrediction::getFlags() & PlayerFlag_OnGround) && (localPlayer->flags() & PlayerFlag_OnGround))
+	if (!(EnginePrediction::getFlags() & 1) && (localPlayer->flags() & 1))
 	{
-		cmd->buttons &= ~UserCmd::Button_Bullrush;
+		if (config->exploits.fastDuck)
+			cmd->buttons &= ~UserCmd::Button_Bullrush;
 		cmd->buttons |= UserCmd::Button_Duck;
 	}
 

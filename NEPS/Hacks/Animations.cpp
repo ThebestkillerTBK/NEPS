@@ -127,7 +127,7 @@ void Animations::resolveDesync(Entity *animatable) noexcept
 
 	constexpr auto authentic = [](Entity *animatable) noexcept
 	{
-		#ifndef NEPS_DEBUG
+		//#ifndef NEPS_DEBUG
 		if (animatable->moveType() == MoveType::Ladder) return true;
 		if (animatable->moveType() == MoveType::Noclip) return true;
 		if (animatable->isBot()) return true;
@@ -142,7 +142,7 @@ void Animations::resolveDesync(Entity *animatable) noexcept
 			if (playerData->chokedPackets < -3) return true;
 			if (playerData->lbyUpdate) return true;
 		}
-		#endif // NEPS_DEBUG
+		//#endif // NEPS_DEBUG
 
 		return false;
 	};
