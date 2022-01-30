@@ -819,6 +819,7 @@ static void from_json(const json &j, Config::Misc &m)
 	read(j, "Disable extrapolation", m.noExtrapolate);
 	read(j, "Disable IK", m.disableIK);
 	read(j, "Resolve LBY", m.resolveLby);
+	read(j, "Always Resolve LBY", m.alwaysResolve);
 	read(j, "Unlock invertory", m.unlockInvertory);
 	read(j, "Disable HUD blur", m.disablePanoramablur);
 	read<value_t::object>(j, "Prepare revolver", m.prepareRevolver);
@@ -954,7 +955,8 @@ static void from_json(const json &j, Config::Movement &m)
 	read(j, "Humanize", m.humanize);
 	read(j, "Auto strafe", m.autoStrafe);
 	read<value_t::object>(j, "Edge jump", m.edgeJump);
-	read<value_t::object>(j, "Air duck", m.autoJumpBug);
+	read<value_t::object>(j, "Jump bug", m.jumpBug);
+	read<value_t::object>(j, "Edge bug", m.edgeBug);
 	read(j, "Fast stop", m.fastStop);
 	read<value_t::object>(j, "Quick Peek", m.quickPeekKey);
 	read<value_t::object>(j, "Quick Peek Color", m.quickPeekColor);
@@ -1463,6 +1465,7 @@ static void to_json(json &j, const Config::Misc &o)
 	WRITE("Disable extrapolation", noExtrapolate);
 	WRITE("Disable IK", disableIK);
 	WRITE("Resolve LBY", resolveLby);
+	WRITE("Always Resolve LBY", alwaysResolve);
 	WRITE("Unlock invertory", unlockInvertory);
 	WRITE("Disable HUD blur", disablePanoramablur);
 	WRITE("Prepare revolver", prepareRevolver);
@@ -1610,7 +1613,8 @@ static void to_json(json &j, const Config::Movement &o)
 	WRITE("Humanize", humanize);
 	WRITE("Auto strafe", autoStrafe);
 	WRITE("Edge jump", edgeJump);
-	WRITE("Air duck", autoJumpBug);
+	WRITE("Jump bug", jumpBug);
+	WRITE("Edge bug", edgeBug);
 	WRITE("Fast stop", fastStop);
 	WRITE("Quick Peek Color", quickPeekColor);
 	WRITE("Quick Peek", quickPeekKey);

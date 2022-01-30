@@ -2519,7 +2519,8 @@ void GUI::renderMovementWindow(bool contentOnly) noexcept
 	}
 	ImGui::Checkbox("Autostrafe", &config->movement.autoStrafe);
 	ImGuiCustom::keyBind("Edge jump", config->movement.edgeJump);
-	ImGuiCustom::keyBind("Auto Jump Bug", config->movement.autoJumpBug);
+	ImGuiCustom::keyBind("Jump bug", config->movement.jumpBug);
+	ImGuiCustom::keyBind("Edge bug", config->movement.edgeBug);
 	ImGui::Checkbox("Fast stop", &config->movement.fastStop);
 	ImGuiCustom::keyBind("Quick Peek", config->movement.quickPeekKey);
 	ImGuiCustom::colorPicker("Draw Quick Peek", config->movement.quickPeekColor);
@@ -2590,6 +2591,16 @@ void GUI::renderMiscWindow(bool contentOnly) noexcept
 	ImGui::Checkbox("Disable extrapolation", &config->misc.noExtrapolate);
 	ImGui::Checkbox("Disable IK", &config->misc.disableIK);
 	ImGui::Checkbox("Resolve LBY", &config->misc.resolveLby);
+	ImGui::SameLine();
+	if (ImGui::ArrowButton("resolve", ImGuiDir_Right))
+		ImGui::OpenPopup("##resolve");
+
+	if (ImGui::BeginPopup("##resolve"))
+	{
+		ImGui::Checkbox("Always resolve", &config->misc.alwaysResolve);
+		ImGui::EndPopup();
+	}
+
 	ImGui::Checkbox("NEPSmas (go festive)", &config->misc.goFestive);
 
 	ImGui::NextColumn();

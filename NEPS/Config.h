@@ -444,7 +444,8 @@ public:
 		bool humanize = false;
 		bool autoStrafe = false;
 		KeyBind edgeJump;
-		KeyBind autoJumpBug;
+		KeyBind jumpBug;
+		KeyBind edgeBug;
 		bool fastStop = false;
 		KeyBind quickPeekKey;
 		Color4Toggle quickPeekColor;
@@ -568,6 +569,7 @@ public:
 		int forceRelayCluster = 0;
 		bool allCvar = false;
 		bool goFestive = true;
+		bool alwaysResolve = false;
 	} misc;
 
 	std::array<GrenadeInfo, 500> grenadeInfos;

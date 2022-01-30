@@ -637,9 +637,96 @@ bool Misc::changeName(bool reconnect, const char *newName, float delay) noexcept
 	return false;
 }
 
-void Misc::autoJumpBug(UserCmd* cmd) noexcept
+void Misc::edgeBug(UserCmd* cmd) noexcept
 {
-	if (static Helpers::KeyBindState flag; !flag[config->movement.autoJumpBug])
+	if (static Helpers::KeyBindState flag; !flag[config->movement.edgeBug])
+		return;
+
+	if (!localPlayer || !localPlayer->isAlive())
+		return;
+
+	if (const auto mt = localPlayer->moveType(); mt == MoveType::Noclip || mt == MoveType::Ladder)
+		return;
+
+	const auto localPlayer2 = localPlayer.get();
+	float max_radias = M_PI * 2;
+	float step = max_radias / 128;
+	float xThick = 23;
+
+	if (localPlayer->flags() & 1)
+	{
+		Vector pos = localPlayer->origin();
+		for (float a = 0.f; a < max_radias; a += step)
+		{
+			Vector pt;
+			pt.x = (xThick * cos(a)) + pos.x;
+			pt.y = (xThick * sin(a)) + pos.y;
+			pt.z = pos.z;
+
+			Vector pt2 = pt;
+			pt2.z -= 6;
+
+			Trace trace;
+
+			TraceFilter flt = localPlayer2;
+
+			interfaces->engineTrace->traceRay({ pt, pt2 }, 0x1400B, flt, trace);
+
+			if (trace.fraction != 1.0f && trace.fraction != 0.0f)
+			{
+				cmd->buttons |= UserCmd::Button_Duck;
+			}
+		}
+		for (float a = 0.f; a < max_radias; a += step)
+		{
+			Vector pt;
+			pt.x = ((xThick - 2.f) * cos(a)) + pos.x;
+			pt.y = ((xThick - 2.f) * sin(a)) + pos.y;
+			pt.z = pos.z;
+
+			Vector pt2 = pt;
+			pt2.z -= 6;
+
+			Trace trace;
+
+			TraceFilter flt = localPlayer2;
+			interfaces->engineTrace->traceRay({ pt, pt2 }, 0x1400B, flt, trace);
+
+			if (trace.fraction != 1.f && trace.fraction != 0.f)
+			{
+				if (config->exploits.fastDuck)
+					cmd->buttons &= ~UserCmd::Button_Bullrush;
+				cmd->buttons |= UserCmd::Button_Duck;
+			}
+		}
+		for (float a = 0.f; a < max_radias; a += step)
+		{
+			Vector pt;
+			pt.x = ((xThick - 20.f) * cos(a)) + pos.x;
+			pt.y = ((xThick - 20.f) * sin(a)) + pos.y;
+			pt.z = pos.z;
+
+			Vector pt2 = pt;
+			pt2.z -= 6;
+
+			Trace trace;
+
+			TraceFilter flt = localPlayer2;
+			interfaces->engineTrace->traceRay({ pt, pt2 }, 0x1400B, flt, trace);
+
+			if (trace.fraction != 1.f && trace.fraction != 0.f)
+			{
+				if (config->exploits.fastDuck)
+					cmd->buttons &= ~UserCmd::Button_Bullrush;
+				cmd->buttons |= UserCmd::Button_Duck;
+			}
+		}
+	}
+}
+
+void Misc::jumpBug(UserCmd* cmd) noexcept
+{
+	if (static Helpers::KeyBindState flag; !flag[config->movement.jumpBug])
 		return;
 
 	if (!localPlayer || !localPlayer->isAlive())
@@ -681,7 +768,7 @@ void Misc::bunnyHop(UserCmd* cmd) noexcept
 		|| localPlayer->flags() & PlayerFlag_InWater || localPlayer->flags() & PlayerFlag_WaterJump)
 		return;
 
-	if (static Helpers::KeyBindState flag; flag[config->movement.autoJumpBug])
+	if (static Helpers::KeyBindState flag; flag[config->movement.jumpBug])
 		return;
 
 	static float previousTime = memory->globalVars->realTime;

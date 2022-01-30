@@ -127,22 +127,24 @@ void Animations::resolveDesync(Entity *animatable) noexcept
 
 	constexpr auto authentic = [](Entity *animatable) noexcept
 	{
-		//#ifndef NEPS_DEBUG
-		if (animatable->moveType() == MoveType::Ladder) return true;
-		if (animatable->moveType() == MoveType::Noclip) return true;
-		if (animatable->isBot()) return true;
-		const float simulationTime = animatable->simulationTime();
-		const auto remoteActiveWeapon = animatable->getActiveWeapon();
-		if (remoteActiveWeapon && Helpers::timeToTicks(remoteActiveWeapon->lastShotTime()) == Helpers::timeToTicks(simulationTime)) return true;
-
-		GameData::Lock lock;
-
-		if (auto playerData = GameData::playerByHandle(animatable->handle()))
+		if (!config->misc.alwaysResolve)
 		{
-			if (playerData->chokedPackets < -3) return true;
-			if (playerData->lbyUpdate) return true;
+
+			if (animatable->moveType() == MoveType::Ladder) return true;
+			if (animatable->moveType() == MoveType::Noclip) return true;
+			if (animatable->isBot()) return true;
+			const float simulationTime = animatable->simulationTime();
+			const auto remoteActiveWeapon = animatable->getActiveWeapon();
+			if (remoteActiveWeapon && Helpers::timeToTicks(remoteActiveWeapon->lastShotTime()) == Helpers::timeToTicks(simulationTime)) return true;
+
+			GameData::Lock lock;
+
+			if (auto playerData = GameData::playerByHandle(animatable->handle()))
+			{
+				if (playerData->chokedPackets < -3) return true;
+				if (playerData->lbyUpdate) return true;
+			}
 		}
-		//#endif // NEPS_DEBUG
 
 		return false;
 	};

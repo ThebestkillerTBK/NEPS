@@ -220,8 +220,9 @@ static bool __stdcall createMove(float inputSampleTime, UserCmd *cmd) noexcept
 	Misc::fixTabletSignal();
 	Misc::removeCrouchCooldown(cmd);
 	Misc::fastStop(cmd);
+	Misc::edgeBug(cmd);
+	Misc::jumpBug(cmd);
 	Misc::autoStrafe(cmd);
-	Misc::autoJumpBug(cmd);
 	Visuals::runFreeCam(cmd, currentViewAngles);
 	Misc::bunnyHop(cmd);
 	Misc::fixMouseDelta(cmd);
