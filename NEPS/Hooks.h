@@ -34,6 +34,8 @@ public:
 	std::add_pointer_t<void __fastcall()> originalCheckFileCRC;
 	std::add_pointer_t<void __fastcall(void *, void *, void *, void *, void *, void *)> originalDoProceduralFootPlant;
 
+	HookType getColorModulation;
+	HookType isUsingStaticPropDebugModes;
 	HookType bspQuery;
 	HookType client;
 	HookType clientMode;

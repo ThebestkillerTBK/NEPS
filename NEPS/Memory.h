@@ -98,8 +98,8 @@ public:
 	uintptr_t money;
 	uintptr_t demoFileEndReached;
 	std::string* relayCluster;
-	void* WriteUsercmdDeltaToBufferReturn;
-	uintptr_t WriteUsercmd;
+	uintptr_t getColorModulation;
+	uintptr_t isUsingStaticPropDebugModes;
 	const wchar_t *(__thiscall *getDecoratedPlayerName)(PlayerResource *pr, int index, wchar_t *buffer, int buffsize, int flags);
 	void(__thiscall *createState)(AnimState *state, Entity *);
 	void(__vectorcall *updateState)(AnimState *state, void *, float z, float y, float x, void *);

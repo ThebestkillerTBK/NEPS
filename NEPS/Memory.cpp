@@ -83,8 +83,9 @@ Memory::Memory() noexcept
 	invalidateBoneCache = *reinterpret_cast<decltype(invalidateBoneCache)>(MemorySearch::findPattern("client", "\x80\x3D?????\x74\x16\xA1????\x48\xC7\x81"));
 	viewRenderBeams = *reinterpret_cast<ViewRenderBeams **>(MemorySearch::findPattern("client", "\xB9????\xA1????\xFF\x10\xA1????\xB9" + 1));
 	relayCluster = *(std::string**)(MemorySearch::findPattern("steamnetworkingsockets", "\xB8????\xB9????\x0F\x43") + 1);
-	WriteUsercmdDeltaToBufferReturn = *(reinterpret_cast<void**>(MemorySearch::findPattern("engine", "\x84\xC0\x74\x04\xB0\x01\xEB\x02\x32\xC0\x8B\xFE\x46\x3B\xF3\x7E\xC9\x84\xC0\x0F\x84????")));
-	WriteUsercmd = MemorySearch::findPattern("client", "\x55\x8B\xEC\x83\xE4\xF8\x51\x53\x56\x8B\xD9\x8B\x0D");
+	getColorModulation = MemorySearch::findPattern("materialsystem", "\x55\x8B\xEC\x83\xEC?\x56\x8B\xF1\x8A\x46");
+	isUsingStaticPropDebugModes = MemorySearch::findPattern("engine", "\x8B\x0D????\x81\xF9????\x75?\xA1????\x35????\xEB?\x8B\x01\xFF\x50?\x83\xF8?\x0F\x85????\x8B\x0D");
+
 
 	_setOrAddAttributeValueByName = relativeToAbsolute<decltype(_setOrAddAttributeValueByName)>(MemorySearch::findPattern("client", "\xE8????\x8B\x8D????\x85\xC9\x74\x10") + 1);
 

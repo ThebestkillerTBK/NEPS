@@ -47,9 +47,6 @@
 	ImGui::TextUnformatted(l); \
 }
 
-constexpr auto windowFlags = ImGuiWindowFlags_NoResize
-| ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize;
-
 constexpr auto windowFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize;
 constexpr auto wndFlags2 = 0;//ImGuiWindowFlags_NoScrollbar
 
@@ -1829,6 +1826,7 @@ void GUI::renderVisualsWindow(bool contentOnly) noexcept
 	if (ImGui::IsItemHovered())
 		ImGui::SetTooltip("About 34%% performance drop");
 	ImGuiCustom::colorPicker("Sky color", config->visuals.sky);
+	ImGuiCustom::colorPicker("Map color", config->visuals.mapColor);
 	
 	ImGui::Checkbox("Opposite hand knife", &config->visuals.oppositeHandKnife);
 	ImGui::Checkbox("Deagle spinner", &config->visuals.deagleSpinner);

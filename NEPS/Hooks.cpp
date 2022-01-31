@@ -165,6 +165,51 @@ static void __fastcall checkFileCRC() noexcept
 	hooks->originalCheckFileCRC();
 }
 
+static void __fastcall getColorModulationHook(void* thisPointer, void* edx, float* r, float* g, float* b) noexcept
+{
+	static auto original = hooks->getColorModulation.getOriginal<void>(r, g, b);
+
+	original(thisPointer, r, g, b);
+
+	const auto material = reinterpret_cast<Material*>(thisPointer);
+	if (!material)
+		return;
+
+	const std::string_view textureGroup = material->getTextureGroupName();
+	if (!textureGroup.starts_with("World") && !textureGroup.starts_with("StaticProp"))
+		return;
+
+	const auto isProp = textureGroup.starts_with("StaticProp");
+
+	if (config->visuals.mapColor.enabled)
+	{
+		if (config->visuals.mapColor.rainbow)
+		{
+			const auto [colorR, colorG, colorB] { Helpers::rainbowColor(config->visuals.mapColor.rainbowSpeed) };
+			*r *= colorR;
+			*g *= colorG;
+			*b *= colorB;
+		}
+		else
+		{
+			*r *= config->visuals.mapColor.color.at(0);
+			*g *= config->visuals.mapColor.color.at(1);
+			*b *= config->visuals.mapColor.color.at(2);
+		}
+
+		isProp ? *r *= 0.5f : *r *= 0.23f;
+		isProp ? *g *= 0.5f : *g *= 0.23f;
+		isProp ? *b *= 0.5f : *b *= 0.23f;
+	}
+
+	return;
+}
+
+static bool __fastcall isUsingStaticPropDebugModesHook(void* thisPointer, void* edx) noexcept
+{
+	return config->visuals.mapColor.enabled;
+}
+
 static int __fastcall sendDatagram(NetworkChannel* network, void* edx, void* datagram)
 {
 	auto original = hooks->networkChannel.getOriginal<int, 46, void*>(datagram);
@@ -730,6 +775,9 @@ void Hooks::install() noexcept
 	if constexpr (std::is_same_v<HookType, MinHook>)
 		MH_Initialize();
 
+	getColorModulation.detour(memory->getColorModulation, getColorModulationHook);
+	isUsingStaticPropDebugModes.detour(memory->isUsingStaticPropDebugModes, isUsingStaticPropDebugModesHook);
+
 	bspQuery.init(interfaces->engine->getBSPTreeQuery());
 	bspQuery.hookAt(6, listLeavesInBox);
 
@@ -830,6 +878,8 @@ void Hooks::uninstall() noexcept
 
 	Animations::releaseState();
 
+	getColorModulation.restore();
+	isUsingStaticPropDebugModes.restore();
 	bspQuery.restore();
 	panel.restore();
 	client.restore();

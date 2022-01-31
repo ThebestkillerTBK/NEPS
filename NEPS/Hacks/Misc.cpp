@@ -385,10 +385,10 @@ void Misc::prepareRevolver(UserCmd *cmd) noexcept
 		return;
 
 	constexpr float revolverPrepareTime = 0.234375f;
-
+	
 	if (auto activeWeapon = localPlayer->getActiveWeapon(); activeWeapon && activeWeapon->itemDefinitionIndex2() == WeaponId::Revolver)
 	{
-		const auto time = memory->globalVars->serverTime();
+		auto time = memory->globalVars->serverTime();
 
 		if (localPlayer->nextAttack() > time)
 			return;
@@ -406,9 +406,13 @@ void Misc::prepareRevolver(UserCmd *cmd) noexcept
 					cmd->buttons |= UserCmd::Button_Attack2;
 			} else
 				cmd->buttons |= UserCmd::Button_Attack;
-		} else
+		}
+		else
+		{
 			readyTime = time + revolverPrepareTime;
+		}
 	}
+	
 }
 
 void Misc::fastPlant(UserCmd *cmd) noexcept
@@ -910,6 +914,8 @@ void Misc::changeConVarsFrame(FrameStage stage)
 	case FrameStage::RenderStart:
 		static auto jiggleBonesVar = interfaces->cvar->findVar("r_jiggle_bones");
 		jiggleBonesVar->setValue(false);
+		static auto threadedBoneSetup = interfaces->cvar->findVar("cl_threaded_bone_setup");
+		threadedBoneSetup->setValue(true);
 		static auto contactShadowsVar = interfaces->cvar->findVar("cl_foot_contact_shadows");
 		contactShadowsVar->setValue(false);
 		static auto blurVar = interfaces->cvar->findVar("@panorama_disable_blur");

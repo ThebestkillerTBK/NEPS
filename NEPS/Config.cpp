@@ -643,6 +643,7 @@ static void from_json(const json &j, Config::Visuals &v)
 	read<value_t::object>(j, "Draw aimbot fov", v.drawAimbotFov);
 	read<value_t::object>(j, "Bullet Impacts", v.bulletBox);
 	read(j, "Bullet Impacts time", v.bulletBoxTime);
+	read<value_t::object>(j, "Map color", v.mapColor);
 }
 
 static void from_json(const json &j, sticker_setting &s)
@@ -1754,6 +1755,7 @@ static void to_json(json &j, const Config::Visuals &o)
 	WRITE("Draw aimbot fov", drawAimbotFov);
 	WRITE("Bullet Impacts", bulletBox);
 	WRITE("Bullet Impacts time", bulletBoxTime);
+	WRITE("Map color", mapColor);
 }
 
 static void to_json(json &j, const ImVec4 &o)
