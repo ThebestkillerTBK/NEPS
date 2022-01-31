@@ -4,6 +4,7 @@
 #include <windows.h>
 
 #include <shared_lib/imgui/imgui.h>
+#include <shared_lib/imgui/imgui_internal.h>
 #include <shared_lib/imgui/imgui_stdlib.h>
 #include <shared_lib/Texture/TextureDX9.h>
 
@@ -39,6 +40,15 @@
 #endif // NEPS_DEBUG
 #include "SDK/Engine.h"
 
+#define DRAGNDROP_HINT(l) \
+{ \
+	ImGui::ButtonEx("cfg", {}, ImGuiButtonFlags_Disabled); \
+	ImGui::SameLine(); \
+	ImGui::TextUnformatted(l); \
+}
+
+constexpr auto windowFlags = ImGuiWindowFlags_NoResize
+| ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize;
 
 constexpr auto windowFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize;
 constexpr auto wndFlags2 = 0;//ImGuiWindowFlags_NoScrollbar
@@ -112,17 +122,10 @@ GUI::GUI() noexcept
 
 static void drawColorPalette() noexcept
 {
-	static float windowAlpha = 0.4f;
 	static std::array<Color4, 5U> palette;
 
-	ImGui::PushStyleVar(ImGuiStyleVar_Alpha, windowAlpha);
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowTitleAlign, {0.5f, 0.5f});
 	ImGui::Begin("Color palette", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
-
-	if (const auto payload = ImGui::GetDragDropPayload(); ImGui::IsWindowHovered(ImGuiHoveredFlags_RectOnly) || payload && (payload->IsDataType(IMGUI_PAYLOAD_TYPE_COLOR_3F) || payload->IsDataType(IMGUI_PAYLOAD_TYPE_COLOR_4F)))
-		windowAlpha = windowAlpha * 0.9f + 0.1f;
-	else
-		windowAlpha = windowAlpha * 0.9f + 0.04f;
 
 	ImGui::SetWindowPos(ImVec2{ImGui::GetIO().DisplaySize.x - ImGui::GetWindowSize().x - 10.0f, ImGui::GetIO().DisplaySize.y / 2 - ImGui::GetWindowSize().y}, ImGuiCond_Always);
 
@@ -133,7 +136,7 @@ static void drawColorPalette() noexcept
 	}
 
 	ImGui::End();
-	ImGui::PopStyleVar(2);
+	ImGui::PopStyleVar();
 }
 
 void GUI::handleToggle() noexcept
@@ -443,7 +446,7 @@ void GUI::renderAimbotWindow(bool contentOnly) noexcept
 			if (ImGui::BeginDragDropSource())
 			{
 				ImGui::SetDragDropPayload("Aimbot", &cfg, sizeof(Config::Aimbot), ImGuiCond_Once);
-				ImGui::TextUnformatted("Aimbot config");
+				DRAGNDROP_HINT("Aimbot")
 				ImGui::EndDragDropSource();
 			}
 
@@ -730,7 +733,7 @@ void GUI::renderAntiAimWindow(bool contentOnly) noexcept
 			if (ImGui::BeginDragDropSource())
 			{
 				ImGui::SetDragDropPayload("Anti-aim", &config->antiAim[categories[i]], sizeof(Config::AntiAim), ImGuiCond_Once);
-				ImGui::TextUnformatted("Anti-aim config");
+				DRAGNDROP_HINT("Anti-aim")
 				ImGui::EndDragDropSource();
 			}
 
@@ -863,7 +866,7 @@ void GUI::renderTriggerbotWindow(bool contentOnly) noexcept
 			if (ImGui::BeginDragDropSource())
 			{
 				ImGui::SetDragDropPayload("Triggerbot", &cfg, sizeof(Config::Triggerbot), ImGuiCond_Once);
-				ImGui::TextUnformatted("Triggerbot config");
+				DRAGNDROP_HINT("Triggerbot")
 				ImGui::EndDragDropSource();
 			}
 
@@ -1257,7 +1260,7 @@ void GUI::renderESPWindow(bool contentOnly) noexcept
 				case 3: ImGui::SetDragDropPayload("Projectile", &config->esp.projectiles["All"], sizeof(Projectile), ImGuiCond_Once); break;
 				default: ImGui::SetDragDropPayload("Entity", &getConfigShared(i, "All"), sizeof(Shared), ImGuiCond_Once); break;
 				}
-				ImGui::TextUnformatted("ESP config");
+				DRAGNDROP_HINT("ESP")
 				ImGui::EndDragDropSource();
 			}
 
@@ -1357,7 +1360,7 @@ void GUI::renderESPWindow(bool contentOnly) noexcept
 						case 3: ImGui::SetDragDropPayload("Projectile", &config->esp.projectiles[items[j]], sizeof(Projectile), ImGuiCond_Once); break;
 						default: ImGui::SetDragDropPayload("Entity", &getConfigShared(i, items[j]), sizeof(Shared), ImGuiCond_Once); break;
 						}
-						ImGui::TextUnformatted("ESP config");
+						DRAGNDROP_HINT("ESP")
 						ImGui::EndDragDropSource();
 					}
 
@@ -1458,7 +1461,7 @@ void GUI::renderESPWindow(bool contentOnly) noexcept
 					if (ImGui::BeginDragDropSource())
 					{
 						ImGui::SetDragDropPayload("Weapon", &subItemConfig, sizeof(Weapon), ImGuiCond_Once);
-						ImGui::TextUnformatted("ESP config");
+						DRAGNDROP_HINT("ESP")
 						ImGui::EndDragDropSource();
 					}
 
