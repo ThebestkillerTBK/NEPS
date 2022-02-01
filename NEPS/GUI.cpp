@@ -1821,12 +1821,12 @@ void GUI::renderVisualsWindow(bool contentOnly) noexcept
 	ImGui::SliderInt("##flash_red", &config->visuals.flashReduction, 0, 100, "Flash reduction %d%%");
 	ImGui::SliderFloat("##brightness", &config->visuals.brightness, 0.0f, 1.0f, "Brightness %.2f");
 
+
 	ImGuiCustom::colorPicker("World color", config->visuals.world);
 	ImGuiCustom::colorPicker("Props color", config->visuals.props);
 	if (ImGui::IsItemHovered())
 		ImGui::SetTooltip("About 34%% performance drop");
 	ImGuiCustom::colorPicker("Sky color", config->visuals.sky);
-	ImGuiCustom::colorPicker("Map color", config->visuals.mapColor);
 	
 	ImGui::Checkbox("Opposite hand knife", &config->visuals.oppositeHandKnife);
 	ImGui::Checkbox("Deagle spinner", &config->visuals.deagleSpinner);

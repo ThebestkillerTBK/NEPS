@@ -388,7 +388,7 @@ void Misc::prepareRevolver(UserCmd *cmd) noexcept
 	
 	if (auto activeWeapon = localPlayer->getActiveWeapon(); activeWeapon && activeWeapon->itemDefinitionIndex2() == WeaponId::Revolver)
 	{
-		auto time = memory->globalVars->serverTime();
+		const auto time = memory->globalVars->serverTime();
 
 		if (localPlayer->nextAttack() > time)
 			return;

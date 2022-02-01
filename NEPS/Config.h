@@ -332,8 +332,6 @@ public:
 			float z = 0.0f;
 			float roll = 0;
 		} viewmodel;
-
-		Color3Toggle mapColor;
 	} visuals;
 
 
